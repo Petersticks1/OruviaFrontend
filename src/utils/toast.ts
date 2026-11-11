@@ -21,3 +21,16 @@ export function showSuccessToast(message: string, description?: string): void {
   )
 }
 
+export function showOruviaToast(
+  type: 'success' | 'error' | 'info',
+  message: string,
+  description?: string,
+): void {
+  store.dispatch(
+    addToast({
+      title: message,
+      description,
+      tone: type === 'error' ? 'danger' : type,
+    }),
+  )
+}

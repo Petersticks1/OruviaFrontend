@@ -1,4 +1,5 @@
 import { store } from '@/store'
+import { useAppDispatch, useAppSelector } from '@/store/hooks'
 
 export const persistor = {
   purge: async (): Promise<void> => {
@@ -10,6 +11,7 @@ export const persistor = {
   },
 }
 
-export { store }
+export { store, useAppDispatch, useAppSelector }
+export const useOruviaAppSelector = useAppSelector
+export const useOruviaAppDispatch = useAppDispatch
 export default store
-

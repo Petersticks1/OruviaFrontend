@@ -9,6 +9,113 @@ export interface APISuccessResponse<T = unknown> {
   data: T
 }
 
+// ── Shared Auth & Password Payloads ───────────────────────────────────────────
+
+export interface VerifyEmailPayload {
+  email: string
+  code: string
+}
+
+export interface ResendVerificationCodePayload {
+  email: string
+}
+
+export interface LoginPayload {
+  email: string
+  password: string
+}
+
+export interface ForgotPasswordPayload {
+  email: string
+}
+
+export interface ResetPasswordPayload {
+  email?: string
+  code?: string
+  token?: string
+  newPassword: string
+  confirmPassword?: string
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string
+  newPassword: string
+  confirmPassword?: string
+}
+
+// ── Seekers Payloads ──────────────────────────────────────────────────────────
+
+export interface RegisterSeekerPayload {
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  email: string
+  phone?: string
+  password: string
+}
+
+export type SeekerLoginPayload = LoginPayload
+
+export interface UpdateSeekerProfilePayload {
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  phone?: string
+  bio?: string
+  avatarUrl?: string
+  preferredLocations?: string[]
+}
+
+// ── Agents Payloads ───────────────────────────────────────────────────────────
+
+export interface RegisterAgentPayload {
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  email: string
+  phone?: string
+  password: string
+  agencyName?: string
+  licenseNumber?: string
+}
+
+export type AgentLoginPayload = LoginPayload
+
+export interface UpdateAgentProfilePayload {
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  phone?: string
+  bio?: string
+  avatarUrl?: string
+  agencyName?: string
+  licenseNumber?: string
+  officeAddress?: string
+}
+
+// ── Landlords Payloads ────────────────────────────────────────────────────────
+
+export interface RegisterLandlordPayload {
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  email: string
+  phone?: string
+  password: string
+}
+
+export type LandlordLoginPayload = LoginPayload
+
+export interface UpdateLandlordProfilePayload {
+  firstName?: string
+  lastName?: string
+  fullName?: string
+  phone?: string
+  bio?: string
+  avatarUrl?: string
+  address?: string
+}
+
 /**
  * 1. LISTING TRUST & HIGHLIGHT BADGES (`listing.badges[]`)
  * Displayed on `PropertyCard` (top-left overlay) and `ListingDetailView` header.
@@ -84,4 +191,3 @@ export const InspectionModeEnum = {
 } as const
 
 export type InspectionModeType = (typeof InspectionModeEnum)[keyof typeof InspectionModeEnum]
-
