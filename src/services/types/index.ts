@@ -116,6 +116,107 @@ export interface UpdateLandlordProfilePayload {
   address?: string
 }
 
+// ── Marketplace & Listings Payloads ───────────────────────────────────────────
+
+export interface MarketplaceLocationsParams {
+  search?: string
+  state?: string
+  city?: string
+  page?: number
+  limit?: number
+}
+
+export interface MarketplaceListingsParams {
+  page?: number
+  limit?: number
+  search?: string
+  q?: string
+  state?: string
+  city?: string
+  locationId?: string
+  propertyType?: string
+  propertyTypeId?: string
+  category?: string
+  type?: 'rent' | 'sale'
+  minPrice?: number
+  maxPrice?: number
+  beds?: number
+  baths?: number
+  verified?: boolean
+  featured?: boolean
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+}
+
+export interface ListerListingsQueryParams {
+  page?: number
+  limit?: number
+  status?: ListingStatusType
+  search?: string
+  type?: 'rent' | 'sale'
+  propertyType?: string
+}
+
+export type UploadListingMediaPayload =
+  | FormData
+  | {
+      files?: File[]
+      media?: string[]
+    }
+
+export interface CreateListingPayload {
+  title: string
+  description: string
+  type?: 'rent' | 'sale'
+  listingType?: 'rent' | 'sale'
+  category?: string
+  propertyType?: string
+  propertyTypeId?: string
+  price: number
+  pricePeriod?: 'year' | 'month' | 'total'
+  serviceCharge?: number
+  cautionFee?: number
+  agencyFeePercent?: number
+  legalFeePercent?: number
+  location?: string
+  address?: string
+  neighbourhood?: string
+  city?: string
+  state?: string
+  locationId?: string
+  lat?: number
+  lng?: number
+  beds?: number
+  bedrooms?: number
+  baths?: number
+  bathrooms?: number
+  areaSqm?: number
+  amenities?: string[]
+  images?: Array<{ id?: string; url: string; alt?: string }> | string[]
+  mediaIds?: string[]
+  videoTourUrl?: string
+  status?: ListingStatusType
+}
+
+export type UpdateListingPayload = Partial<CreateListingPayload>
+
+export interface UpdateListingAvailabilityPayload {
+  isAvailable?: boolean
+  available?: boolean
+  status?: ListingStatusType
+  availableFrom?: string
+}
+
+export interface UpdateListingVariables {
+  id: string
+  payload: UpdateListingPayload
+}
+
+export interface UpdateListingAvailabilityVariables {
+  id: string
+  payload: UpdateListingAvailabilityPayload
+}
+
 /**
  * 1. LISTING TRUST & HIGHLIGHT BADGES (`listing.badges[]`)
  * Displayed on `PropertyCard` (top-left overlay) and `ListingDetailView` header.
