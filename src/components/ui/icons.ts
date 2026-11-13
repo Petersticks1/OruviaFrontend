@@ -246,6 +246,10 @@ export const ICON_DEFINITIONS = {
     id: 'solar:eye-linear',
     body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6S18 18 12 18S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></g>',
   },
+  eyeClosed: {
+    id: 'solar:eye-closed-linear',
+    body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="m3 3l18 18M10.586 10.586a2 2 0 0 0 2.828 2.828M7.362 7.561C5.68 8.74 4.279 10.42 2.5 12c1.889 2.991 5.282 6 9.5 6c1.55 0 3.043-.523 4.395-1.35M12 6c4.008 0 6.701 3.158 8.032 5.06a13.8 13.8 0 0 1-1.607 2.003"/></g>',
+  },
   info: {
     id: 'solar:info-circle-linear',
     body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="1" fill="currentColor"/></g>',

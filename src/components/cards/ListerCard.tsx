@@ -49,7 +49,9 @@ export function ListerCard({
             <p className="text-xs font-medium capitalize text-ink-500">
               {lister.role === 'landlord'
                 ? lister.companyName ?? 'Property Owner (Direct Landlord)'
-                : lister.agencyName ?? 'Real Estate Agent'}
+                : lister.role === 'agent'
+                  ? lister.agencyName ?? 'Real Estate Agent'
+                  : 'Property Seeker'}
             </p>
             {lister.rating > 0 ? (
               <RatingSummary rating={lister.rating} reviewCount={lister.reviewCount} size="sm" />

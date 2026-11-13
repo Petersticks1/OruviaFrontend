@@ -46,7 +46,11 @@ export default function AuthView() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [phone, setPhone] = useState('')
+  const [whatsappNumber, setWhatsappNumber] = useState('')
+  const [preferredLocation, setPreferredLocation] = useState('')
   const [agencyOrCompany, setAgencyOrCompany] = useState('')
+  const [licenseNumber, setLicenseNumber] = useState('')
+  const [bio, setBio] = useState('')
   const [verificationCode, setVerificationCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
 
@@ -154,6 +158,7 @@ export default function AuthView() {
             email: trimmedEmail,
             password,
             phone: trimmedPhone,
+            preferred_location: preferredLocation.trim() || undefined,
           })
           const user = mapProfileDtoToDomain(res.data.seeker)
           dispatch(setSession({ token: res.data.access_token, user }))
@@ -164,7 +169,10 @@ export default function AuthView() {
             email: trimmedEmail,
             password,
             phone: trimmedPhone,
+            whatsapp_number: whatsappNumber.trim() || undefined,
             agency_name: agencyOrCompany.trim() || undefined,
+            license_number: licenseNumber.trim() || undefined,
+            bio: bio.trim() || undefined,
           })
           const user = mapProfileDtoToDomain(res.data.agent)
           dispatch(setSession({ token: res.data.access_token, user }))
@@ -175,7 +183,9 @@ export default function AuthView() {
             email: trimmedEmail,
             password,
             phone: trimmedPhone,
+            whatsapp_number: whatsappNumber.trim() || undefined,
             company_name: agencyOrCompany.trim() || undefined,
+            bio: bio.trim() || undefined,
           })
           const user = mapProfileDtoToDomain(res.data.landlord)
           dispatch(setSession({ token: res.data.access_token, user }))
@@ -358,21 +368,78 @@ export default function AuthView() {
                 )}
               </FormField>
 
-              {selectedRole === 'agent' || selectedRole === 'landlord' ? (
-                <FormField label={selectedRole === 'agent' ? 'Agency Name' : 'Company Name'}>
+              {selectedRole === 'seeker' ? (
+                <FormField label="Preferred Location">
                   {({ id }) => (
                     <Input
                       id={id}
-                      placeholder={
-                        selectedRole === 'agent'
-                          ? 'Optional brokerage / agency name'
-                          : 'Optional property company name'
-                      }
-                      value={agencyOrCompany}
-                      onChange={(e) => setAgencyOrCompany(e.target.value)}
+                      placeholder="e.g. Abeokuta, Ogun"
+                      value={preferredLocation}
+                      onChange={(e) => setPreferredLocation(e.target.value)}
                     />
                   )}
                 </FormField>
+              ) : null}
+
+              {selectedRole === 'agent' || selectedRole === 'landlord' ? (
+                <>
+                  <FormField label="WhatsApp Number">
+                    {({ id }) => (
+                      <Input
+                        id={id}
+                        type="tel"
+                        placeholder="+234 800 000 0000"
+                        value={whatsappNumber}
+                        onChange={(e) => setWhatsappNumber(e.target.value)}
+                      />
+                    )}
+                  </FormField>
+
+                  <FormField
+                    label={selectedRole === 'agent' ? 'Agency Name' : 'Company Name'}
+                  >
+                    {({ id }) => (
+                      <Input
+                        id={id}
+                        placeholder={
+                          selectedRole === 'agent'
+                            ? 'e.g. Bakare Realty'
+                            : 'e.g. Nwosu Estates'
+                        }
+                        value={agencyOrCompany}
+                        onChange={(e) => setAgencyOrCompany(e.target.value)}
+                      />
+                    )}
+                  </FormField>
+
+                  {selectedRole === 'agent' ? (
+                    <FormField label="Practice License Number (optional)">
+                      {({ id }) => (
+                        <Input
+                          id={id}
+                          placeholder="e.g. OG-AG-2026-019"
+                          value={licenseNumber}
+                          onChange={(e) => setLicenseNumber(e.target.value)}
+                        />
+                      )}
+                    </FormField>
+                  ) : null}
+
+                  <FormField label="Bio / Summary">
+                    {({ id }) => (
+                      <Input
+                        id={id}
+                        placeholder={
+                          selectedRole === 'agent'
+                            ? 'e.g. Licensed residential agent in Ogun State.'
+                            : 'e.g. Direct property owner across Abeokuta.'
+                        }
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                      />
+                    )}
+                  </FormField>
+                </>
               ) : null}
             </>
           ) : null}
