@@ -58,6 +58,10 @@ export const ICON_DEFINITIONS = {
     id: 'solar:videocamera-record-linear',
     body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><rect width="13" height="12" x="3" y="6" rx="2.5"/><path d="m16 10l5-3v10l-5-3v-4Z"/></g>',
   },
+  camera: {
+    id: 'solar:camera-linear',
+    body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><circle cx="12" cy="13" r="3"/><path d="M9 4.5h6l1.5 2.5H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h3.5L9 4.5Z"/></g>',
+  },
   home: {
     id: 'solar:home-smile-linear',
     body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="m3 10.5l9-7l9 7M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M9.5 14.5a3.5 3.5 0 0 0 5 0"/></g>',

@@ -25,6 +25,8 @@ import {
   UseUpdateAgentMeMutation,
   UseUpdateLandlordMeMutation,
   UseUpdateSeekerMeMutation,
+  UseUploadAgentListingMediaMutation,
+  UseUploadLandlordListingMediaMutation,
 } from '@/services/mutations'
 import {
   UseGetAgentMeQuery,
@@ -35,6 +37,44 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { updateUserProfile } from '@/store/slices/authSlice'
 import { toggleSavedListing } from '@/store/slices/uiSlice'
+import { showOruviaToast } from '@/utils/toast'
+
+function compressImageFile(file: File, maxDim = 512, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Failed to read image file'))
+    reader.onload = () => {
+      const img = new Image()
+      img.onerror = () => reject(new Error('Failed to load image element'))
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(reader.result as string)
+          return
+        }
+        ctx.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      }
+      img.src = reader.result as string
+    }
+    reader.readAsDataURL(file)
+  })
+}
 
 export default function ProfileView() {
   const { userId } = useParams({ strict: false }) as { userId: string }
@@ -62,6 +102,99 @@ export default function ProfileView() {
     UseChangeAgentPasswordMutation()
   const { changeLandlordPasswordIsPending, changeLandlordPasswordMutationAsync } =
     UseChangeLandlordPasswordMutation()
+
+  const { uploadAgentListingMediaMutationAsync } = UseUploadAgentListingMediaMutation()
+  const { uploadLandlordListingMediaMutationAsync } = UseUploadLandlordListingMediaMutation()
+
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleAvatarFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !authUser) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      showOruviaToast('error', 'Profile photo must be under 5MB.')
+      e.target.value = ''
+      return
+    }
+
+    setIsUploadingAvatar(true)
+    try {
+      let avatarUrl: string | null = null
+
+      if (authUser.role === 'agent') {
+        try {
+          const formData = new FormData()
+          formData.append('images', file)
+          const uploadRes = await uploadAgentListingMediaMutationAsync(formData)
+          if (uploadRes?.data?.images?.[0]) {
+            avatarUrl = uploadRes.data.images[0]
+          }
+        } catch {
+          // Fall back to client compression
+        }
+      } else if (authUser.role === 'landlord') {
+        try {
+          const formData = new FormData()
+          formData.append('images', file)
+          const uploadRes = await uploadLandlordListingMediaMutationAsync(formData)
+          if (uploadRes?.data?.images?.[0]) {
+            avatarUrl = uploadRes.data.images[0]
+          }
+        } catch {
+          // Fall back to client compression
+        }
+      }
+
+      if (!avatarUrl) {
+        avatarUrl = await compressImageFile(file, 512, 0.85)
+      }
+
+      if (authUser.role === 'seeker') {
+        const res = await updateSeekerMeMutationAsync({ avatar_url: avatarUrl })
+        if (res.data) dispatch(updateUserProfile(mapProfileDtoToDomain(res.data)))
+      } else if (authUser.role === 'agent') {
+        const res = await updateAgentMeMutationAsync({ avatar_url: avatarUrl })
+        if (res.data) dispatch(updateUserProfile(mapProfileDtoToDomain(res.data)))
+      } else if (authUser.role === 'landlord') {
+        const res = await updateLandlordMeMutationAsync({ avatar_url: avatarUrl })
+        if (res.data) dispatch(updateUserProfile(mapProfileDtoToDomain(res.data)))
+      }
+    } catch {
+      // Handled by mutation hook
+    } finally {
+      setIsUploadingAvatar(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if (!authUser) return
+    setIsUploadingAvatar(true)
+    try {
+      if (authUser.role === 'seeker') {
+        const res = await updateSeekerMeMutationAsync({ avatar_url: null })
+        if (res.data) dispatch(updateUserProfile(mapProfileDtoToDomain(res.data)))
+      } else if (authUser.role === 'agent') {
+        const res = await updateAgentMeMutationAsync({ avatar_url: null })
+        if (res.data) dispatch(updateUserProfile(mapProfileDtoToDomain(res.data)))
+      } else if (authUser.role === 'landlord') {
+        const res = await updateLandlordMeMutationAsync({ avatar_url: null })
+        if (res.data) dispatch(updateUserProfile(mapProfileDtoToDomain(res.data)))
+      }
+    } catch {
+      // Handled by mutation hook
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
 
   const ownLiveProfile = useMemo(() => {
     if (!isOwnProfile) return undefined
@@ -226,11 +359,30 @@ export default function ProfileView() {
         <Card variant="elevated" padding="lg" className="overflow-hidden">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4 sm:gap-5">
-              <Avatar
-                name={profile.name}
-                src={profile.avatarUrl}
-                size="xl"
-              />
+              <div className="relative inline-block shrink-0">
+                <Avatar
+                  name={profile.name}
+                  src={profile.avatarUrl}
+                  size="xl"
+                />
+                {isUploadingAvatar ? (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-surface">
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-surface border-t-transparent" />
+                  </div>
+                ) : null}
+                {isOwnProfile ? (
+                  <button
+                    type="button"
+                    onClick={triggerFileInput}
+                    disabled={isUploadingAvatar}
+                    aria-label="Upload display picture"
+                    title="Upload display picture"
+                    className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface bg-brand-600 text-surface shadow-md transition hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    <Icon name="camera" size={15} />
+                  </button>
+                ) : null}
+              </div>
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-bold text-ink-900">{profile.name}</h2>
@@ -289,6 +441,8 @@ export default function ProfileView() {
       ) : (
         <ListerCard
           lister={profile}
+          onUploadAvatar={isOwnProfile ? triggerFileInput : undefined}
+          isUploadingAvatar={isUploadingAvatar}
           onContact={() => navigate({ to: '/inbox' })}
           onWhatsApp={
             contactPhone
@@ -304,11 +458,65 @@ export default function ProfileView() {
             title="Account Profile"
             subtitle={
               isSeeker
-                ? 'Update your personal information and housing search preferences.'
-                : 'Keep your contact details accurate so seekers or listers can reach you.'
+                ? 'Update your personal information, profile photo, and housing search preferences.'
+                : 'Keep your contact details and profile photo accurate so clients can reach you.'
             }
           >
             <form onSubmit={handleSaveProfile} className="space-y-4">
+              {/* Profile Photo / Display Picture Section */}
+              <div className="flex flex-col gap-4 rounded-[var(--radius-sm)] border border-line bg-surface-muted/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3.5">
+                  <div className="relative shrink-0">
+                    <Avatar name={profile.name} src={profile.avatarUrl} size="lg" />
+                    {isUploadingAvatar ? (
+                      <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-surface">
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-surface border-t-transparent" />
+                      </div>
+                    ) : null}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-ink-900">Profile Display Picture</p>
+                    <p className="text-xs text-ink-500">
+                      PNG, JPG or WebP up to 5MB. Clear face photo recommended.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    loading={isUploadingAvatar}
+                    onClick={triggerFileInput}
+                    className="gap-1.5"
+                  >
+                    <Icon name="camera" size={14} />
+                    <span>{profile.avatarUrl ? 'Change photo' : 'Upload photo'}</span>
+                  </Button>
+                  {profile.avatarUrl ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isUploadingAvatar}
+                      onClick={handleRemoveAvatar}
+                      className="text-danger hover:text-danger hover:bg-danger/10"
+                    >
+                      <Icon name="trash" size={14} />
+                      <span className="sr-only sm:not-sr-only sm:ml-1">Remove</span>
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/jpg"
+                onChange={handleAvatarFileSelected}
+                className="hidden"
+              />
+
               <FormField label="Full Name" required>
                 {({ id }) => (
                   <Input

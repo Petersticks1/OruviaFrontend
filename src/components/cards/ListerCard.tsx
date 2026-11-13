@@ -3,6 +3,7 @@ import { RatingSummary } from '@/components/shared/RatingSummary'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
+import { Icon } from '@/components/ui/Icon'
 import { Skeleton } from '@/components/ui/Skeleton'
 import type { UserProfile } from '@/types/domain'
 
@@ -11,6 +12,8 @@ export interface ListerCardProps {
   onContact?: () => void
   onViewProfile?: (userId: string) => void
   onWhatsApp?: () => void
+  onUploadAvatar?: () => void
+  isUploadingAvatar?: boolean
   className?: string
 }
 
@@ -26,6 +29,8 @@ export function ListerCard({
   onContact,
   onViewProfile,
   onWhatsApp,
+  onUploadAvatar,
+  isUploadingAvatar,
   className,
 }: ListerCardProps) {
   const badgeLabel =
@@ -35,12 +40,26 @@ export function ListerCard({
     <Card variant="elevated" padding="lg" className={className}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
-          <Avatar
-            name={lister.name}
-            src={lister.avatarUrl}
-            verified={lister.verified}
-            size="lg"
-          />
+          <div className="relative inline-block shrink-0">
+            <Avatar
+              name={lister.name}
+              src={lister.avatarUrl}
+              verified={lister.verified}
+              size="lg"
+            />
+            {onUploadAvatar ? (
+              <button
+                type="button"
+                onClick={onUploadAvatar}
+                disabled={isUploadingAvatar}
+                aria-label="Upload display picture"
+                title="Upload display picture"
+                className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-brand-600 text-surface shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
+              >
+                <Icon name="camera" size={12} />
+              </button>
+            ) : null}
+          </div>
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-bold text-ink-900">{lister.name}</h3>
