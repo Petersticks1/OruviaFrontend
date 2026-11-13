@@ -41,6 +41,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { updateUserProfile } from '@/store/slices/authSlice'
 import { toggleSavedListing } from '@/store/slices/uiSlice'
+import { performFullLogout } from '@/utils/logout'
 import { showOruviaToast } from '@/utils/toast'
 
 function compressImageFile(file: File, maxDim = 512, quality = 0.85): Promise<string> {
@@ -995,6 +996,20 @@ export default function ProfileView() {
             <SectionCard
               title="Account Overview"
               subtitle="Your verified Oruvia account status and activity summary."
+              footer={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    performFullLogout()
+                    navigate({ to: '/' })
+                  }}
+                  className="text-danger border-danger/30 hover:bg-danger/10 hover:border-danger w-full sm:w-auto"
+                >
+                  Log out of account
+                </Button>
+              }
             >
               <div className="divide-y divide-line text-sm">
                 <div className="flex items-center justify-between py-2.5">

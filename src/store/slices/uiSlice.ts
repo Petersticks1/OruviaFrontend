@@ -107,6 +107,18 @@ export const uiSlice = createSlice({
       }
       persistSavedListings(state.savedListingIds)
     },
+    resetUiSession(state) {
+      state.activeModal = null
+      state.mobileSearchOpen = false
+      state.filterModalOpen = false
+      state.pendingIntent = null
+      state.savedListingIds = []
+      try {
+        localStorage.removeItem(SAVED_STORAGE_KEY)
+      } catch {
+        // Ignore storage errors
+      }
+    },
   },
 })
 
@@ -122,6 +134,7 @@ export const {
   setMapView,
   setPendingIntent,
   toggleSavedListing,
+  resetUiSession,
 } = uiSlice.actions
 
 export default uiSlice.reducer

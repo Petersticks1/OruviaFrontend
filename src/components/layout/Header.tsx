@@ -19,7 +19,7 @@ import {
   UseGetSeekerMeQuery,
 } from '@/services/queries'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { logout, updateUserProfile } from '@/store/slices/authSlice'
+import { updateUserProfile } from '@/store/slices/authSlice'
 import {
   resetSearchFilters,
   setBedsFilter,
@@ -29,6 +29,7 @@ import {
   setPriceRangeFilter,
 } from '@/store/slices/searchFiltersSlice'
 import { setFilterModalOpen, setMobileSearchOpen } from '@/store/slices/uiSlice'
+import { performFullLogout } from '@/utils/logout'
 
 function OruviaLogo() {
   return (
@@ -396,7 +397,7 @@ export function Header() {
                     <button
                       type="button"
                       onClick={() => {
-                        dispatch(logout())
+                        performFullLogout()
                         close()
                         navigate({ to: '/' })
                       }}

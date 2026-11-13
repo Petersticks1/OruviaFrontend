@@ -1,13 +1,10 @@
 import { store } from '@/store'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { performFullLogout } from '@/utils/logout'
 
 export const persistor = {
   purge: async (): Promise<void> => {
-    try {
-      localStorage.removeItem('persist:root')
-    } catch {
-      // Ignore storage access errors
-    }
+    performFullLogout()
   },
 }
 
