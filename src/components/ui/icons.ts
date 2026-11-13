@@ -62,6 +62,10 @@ export const ICON_DEFINITIONS = {
     id: 'solar:camera-linear',
     body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><circle cx="12" cy="13" r="3"/><path d="M9 4.5h6l1.5 2.5H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h3.5L9 4.5Z"/></g>',
   },
+  gallery: {
+    id: 'solar:gallery-linear',
+    body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><rect width="18" height="18" x="3" y="3" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15l-4.5-4.5a2 2 0 0 0-2.8 0L6 18.2"/></g>',
+  },
   home: {
     id: 'solar:home-smile-linear',
     body: '<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="m3 10.5l9-7l9 7M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9"/><path d="M9.5 14.5a3.5 3.5 0 0 0 5 0"/></g>',

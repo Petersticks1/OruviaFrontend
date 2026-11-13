@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -72,6 +72,8 @@ export function Header() {
   const [expandedSearchPanel, setExpandedSearchPanel] = useState(false)
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const isHome = pathname === '/'
 
   const user = useAppSelector((state) => state.auth.user)
   const token = useAppSelector((state) => state.auth.token)
@@ -135,30 +137,67 @@ export function Header() {
 
         {/* Mobile Full-Width Search Pill (<768px) */}
         <div className="flex flex-1 items-center gap-2 md:hidden">
+          {!isHome ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  window.history.back()
+                } else {
+                  navigate({ to: '/' })
+                }
+              }}
+              aria-label="Navigate back"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink-900 shadow-[var(--shadow-card)] active:scale-95 transition-transform cursor-pointer"
+            >
+              <Icon name="chevronLeft" size={20} />
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={() => dispatch(setMobileSearchOpen(true))}
-            className="flex flex-1 items-center gap-3 rounded-full border border-line bg-surface px-4 py-2.5 text-left shadow-[var(--shadow-card)] transition-shadow active:scale-[0.99] cursor-pointer"
+            className="flex flex-1 items-center gap-2.5 rounded-full border border-line bg-surface px-3.5 py-2 text-left shadow-[var(--shadow-card)] transition-shadow active:scale-[0.99] cursor-pointer min-w-0"
           >
-            <Icon name="search" size={18} className="text-brand-500" />
+            <Icon name="search" size={17} className="text-brand-500 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-bold text-ink-900">
                 {filters.location || 'Search city or area...'}
               </p>
-              <p className="truncate text-[11px] text-ink-500">
+              <p className="truncate text-[10px] text-ink-500">
                 {filters.type === 'all' ? 'Rent or Buy' : `For ${filters.type}`} · {priceSummary} ·{' '}
                 {filters.beds > 0 ? `${filters.beds}+ beds` : 'Any beds'}
               </p>
             </div>
           </button>
+
           <button
             type="button"
             aria-label="Open filters"
             onClick={() => dispatch(setFilterModalOpen(true))}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink-900 shadow-[var(--shadow-card)] cursor-pointer"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink-900 shadow-[var(--shadow-card)] cursor-pointer active:scale-95 transition-transform"
           >
             <Icon name="filter" size={18} />
           </button>
+
+          {user ? (
+            <Link
+              to="/profile/$userId"
+              params={{ userId: user.id }}
+              aria-label="View Profile details"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink-900 shadow-[var(--shadow-card)] cursor-pointer overflow-hidden p-0.5 active:scale-95 transition-transform"
+            >
+              <Avatar name={user.name} src={user.avatarUrl} verified={user.verified} size="sm" />
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              aria-label="Log in"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink-700 shadow-[var(--shadow-card)] cursor-pointer active:scale-95 transition-transform"
+            >
+              <Icon name="user" size={18} />
+            </Link>
+          )}
         </div>
 
         {/* Desktop Centered Pill Search Bar (Location | Type | Price | Beds) */}

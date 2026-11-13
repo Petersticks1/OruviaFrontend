@@ -13,6 +13,7 @@ export interface ListerCardProps {
   onViewProfile?: (userId: string) => void
   onWhatsApp?: () => void
   onUploadAvatar?: () => void
+  onPreviewAvatar?: () => void
   isUploadingAvatar?: boolean
   className?: string
 }
@@ -30,6 +31,7 @@ export function ListerCard({
   onViewProfile,
   onWhatsApp,
   onUploadAvatar,
+  onPreviewAvatar,
   isUploadingAvatar,
   className,
 }: ListerCardProps) {
@@ -41,12 +43,31 @@ export function ListerCard({
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
           <div className="relative inline-block shrink-0">
-            <Avatar
-              name={lister.name}
-              src={lister.avatarUrl}
-              verified={lister.verified}
-              size="lg"
-            />
+            {lister.avatarUrl && onPreviewAvatar ? (
+              <button
+                type="button"
+                onClick={onPreviewAvatar}
+                aria-label="Preview display picture"
+                className="group relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
+              >
+                <Avatar
+                  name={lister.name}
+                  src={lister.avatarUrl}
+                  verified={lister.verified}
+                  size="lg"
+                />
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-ink-900/35 opacity-0 transition-opacity group-hover:opacity-100 text-surface">
+                  <Icon name="eye" size={16} />
+                </span>
+              </button>
+            ) : (
+              <Avatar
+                name={lister.name}
+                src={lister.avatarUrl}
+                verified={lister.verified}
+                size="lg"
+              />
+            )}
             {onUploadAvatar ? (
               <button
                 type="button"
@@ -54,7 +75,7 @@ export function ListerCard({
                 disabled={isUploadingAvatar}
                 aria-label="Upload display picture"
                 title="Upload display picture"
-                className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-brand-600 text-surface shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
+                className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-surface bg-brand-600 text-surface shadow-sm transition hover:bg-brand-700 disabled:opacity-50 cursor-pointer"
               >
                 <Icon name="camera" size={12} />
               </button>
