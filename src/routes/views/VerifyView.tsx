@@ -4,6 +4,7 @@ import { Card } from '@/components/cards/Card'
 import { EmptyStateCard } from '@/components/cards/EmptyStateCard'
 import { SectionCard } from '@/components/cards/SectionCard'
 import { FormField } from '@/components/shared/FormField'
+import { LiveSelfieCapture } from '@/components/shared/LiveSelfieCapture'
 import { PageContainer } from '@/components/shared/PageContainer'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
@@ -194,14 +195,26 @@ export default function VerifyView() {
     )
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!idNumber.trim() || !address.trim() || !city.trim() || !stateName.trim()) {
+    const nativeForm = new FormData(e.currentTarget)
+    const resolvedIdNumber = (idNumber || String(nativeForm.get('id_number') ?? '')).trim()
+    const resolvedAddress = (address || String(nativeForm.get('address') ?? '')).trim()
+    const resolvedCity = (city || String(nativeForm.get('city') ?? 'Abeokuta')).trim()
+    const resolvedState = (stateName || String(nativeForm.get('state') ?? 'Ogun')).trim()
+
+    const missingFields: string[] = []
+    if (!resolvedIdNumber) missingFields.push('ID number')
+    if (!resolvedAddress) missingFields.push(isLandlord ? 'residential address' : 'office address')
+    if (!resolvedCity) missingFields.push('city')
+    if (!resolvedState) missingFields.push('state')
+
+    if (missingFields.length > 0) {
       dispatch(
         addToast({
           title: 'Missing required details',
-          description: 'Please fill in your ID number, address, city, and state.',
+          description: `Please fill in your ${missingFields.join(', ')}.`,
           tone: 'danger',
         }),
       )
@@ -232,22 +245,22 @@ export default function VerifyView() {
 
     const formData = new FormData()
     formData.append('id_type', idType)
-    formData.append('id_number', idNumber.trim())
-    formData.append('city', city.trim())
-    formData.append('state', stateName.trim())
+    formData.append('id_number', resolvedIdNumber)
+    formData.append('city', resolvedCity)
+    formData.append('state', resolvedState)
     formData.append('id_document', idDocumentFile)
     formData.append('selfie', selfieFile)
 
     try {
       if (isLandlord) {
         formData.append('proof_type', proofType)
-        formData.append('residential_address', address.trim())
+        formData.append('residential_address', resolvedAddress)
         if (extraDocFile) {
           formData.append('proof_document', extraDocFile)
         }
         await submitLandlordKycMutationAsync(formData)
       } else {
-        formData.append('office_address', address.trim())
+        formData.append('office_address', resolvedAddress)
         if (agencyName.trim()) {
           formData.append('agency_name', agencyName.trim())
         }
@@ -451,6 +464,7 @@ export default function VerifyView() {
                     {({ id }) => (
                       <Input
                         id={id}
+                        name="id_number"
                         placeholder={idType === 'nin' ? '48291038475' : 'Enter ID number'}
                         value={idNumber}
                         onChange={(e) => setIdNumber(e.target.value)}
@@ -472,6 +486,7 @@ export default function VerifyView() {
                     {({ id }) => (
                       <Input
                         id={id}
+                        name="address"
                         placeholder="Street and building address"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
@@ -482,24 +497,24 @@ export default function VerifyView() {
 
                   <FormField label="City" required>
                     {({ id }) => (
-                      <Input
+                      <Select
                         id={id}
-                        placeholder="e.g. Abeokuta"
+                        name="city"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
-                        required
+                        options={[{ value: 'Abeokuta', label: 'Abeokuta' }]}
                       />
                     )}
                   </FormField>
 
                   <FormField label="State" required>
                     {({ id }) => (
-                      <Input
+                      <Select
                         id={id}
-                        placeholder="e.g. Ogun"
+                        name="state"
                         value={stateName}
                         onChange={(e) => setStateName(e.target.value)}
-                        required
+                        options={[{ value: 'Ogun', label: 'Ogun State' }]}
                       />
                     )}
                   </FormField>
@@ -573,14 +588,12 @@ export default function VerifyView() {
                       icon="verified"
                     />
 
-                    <DocumentUploadBox
+                    <LiveSelfieCapture
                       label="2. Live Selfie Photo"
-                      hint="Clear photo of your face holding or next to your ID for liveness match"
+                      hint="Use your camera to take a clear selfie of your face holding or next to your ID"
                       required
-                      accept="image/*"
                       file={selfieFile}
                       onFileSelect={setSelfieFile}
-                      icon="camera"
                     />
 
                     <DocumentUploadBox
