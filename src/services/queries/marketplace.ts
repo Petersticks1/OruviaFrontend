@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { marketplaceService } from '../index'
-import type { MarketplaceListingsParams, MarketplaceLocationsParams } from '../types'
+import type {
+  MarketplaceListingsParams,
+  MarketplaceLocationsParams,
+  PropertyTypesParams,
+} from '../types'
 
 export const QUERY_KEYS = {
   GET_LOCATIONS: 'getLocations',
@@ -34,7 +38,10 @@ export const UseGetLocationsQuery = (
   }
 }
 
-export const UseGetPropertyTypesQuery = (enabled: boolean = true) => {
+export const UseGetPropertyTypesQuery = (
+  params?: PropertyTypesParams,
+  enabled: boolean = true,
+) => {
   const {
     data: propertyTypesData,
     isLoading: propertyTypesIsLoading,
@@ -42,8 +49,8 @@ export const UseGetPropertyTypesQuery = (enabled: boolean = true) => {
     isError: propertyTypesIsError,
     refetch: refetchPropertyTypes,
   } = useQuery({
-    queryKey: [QUERY_KEYS.GET_PROPERTY_TYPES],
-    queryFn: async () => await marketplaceService.getPropertyTypesService(),
+    queryKey: [QUERY_KEYS.GET_PROPERTY_TYPES, params],
+    queryFn: async () => await marketplaceService.getPropertyTypesService(params),
     enabled,
   })
 
@@ -105,4 +112,3 @@ export const UseGetMarketplaceListingByIdOrSlugQuery = (
     refetchMarketplaceListingDetail,
   }
 }
-

@@ -8,19 +8,8 @@ import type {
   UpdateListingVariables,
   UploadListingMediaPayload,
 } from '../types'
+import { getApiErrorMessage } from '../utils'
 import { showOruviaToast } from '../../utils/toast'
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (
-    error &&
-    typeof error === 'object' &&
-    'message' in error &&
-    typeof error.message === 'string'
-  ) {
-    return error.message
-  }
-  return fallback
-}
 
 // ── Agent Listing Mutations ───────────────────────────────────────────────────
 
@@ -37,7 +26,7 @@ export const UseUploadAgentListingMediaMutation = () => {
       showOruviaToast('success', data?.message || 'Listing media uploaded successfully!')
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to upload listing media.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to upload listing media.'))
     },
   })
 
@@ -59,14 +48,14 @@ export const UseCreateAgentListingMutation = () => {
     mutationFn: async (payload: CreateListingPayload) =>
       await listingsService.createAgentListingService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Listing created successfully!')
+      showOruviaToast('success', data?.message || 'Listing created and submitted for review!')
       void queryClient.invalidateQueries({ queryKey: [LISTING_QUERY_KEYS.GET_AGENT_LISTINGS] })
       void queryClient.invalidateQueries({
         queryKey: [MARKETPLACE_QUERY_KEYS.GET_MARKETPLACE_LISTINGS],
       })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to create listing.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to create listing.'))
     },
   })
 
@@ -98,7 +87,7 @@ export const UseUpdateAgentListingMutation = () => {
       })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to update listing.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to update listing.'))
     },
   })
 
@@ -119,14 +108,17 @@ export const UseDeleteAgentListingMutation = () => {
   } = useMutation({
     mutationFn: async (id: string) => await listingsService.deleteAgentListingService(id),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Listing deleted successfully!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Listing deleted successfully!',
+      )
       void queryClient.invalidateQueries({ queryKey: [LISTING_QUERY_KEYS.GET_AGENT_LISTINGS] })
       void queryClient.invalidateQueries({
         queryKey: [MARKETPLACE_QUERY_KEYS.GET_MARKETPLACE_LISTINGS],
       })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to delete listing.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to delete listing.'))
     },
   })
 
@@ -158,7 +150,7 @@ export const UseUpdateAgentListingAvailabilityMutation = () => {
       })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to update listing availability.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to update listing availability.'))
     },
   })
 
@@ -184,7 +176,7 @@ export const UseUploadLandlordListingMediaMutation = () => {
       showOruviaToast('success', data?.message || 'Listing media uploaded successfully!')
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to upload listing media.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to upload listing media.'))
     },
   })
 
@@ -206,14 +198,14 @@ export const UseCreateLandlordListingMutation = () => {
     mutationFn: async (payload: CreateListingPayload) =>
       await listingsService.createLandlordListingService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Listing created successfully!')
+      showOruviaToast('success', data?.message || 'Listing created and submitted for review!')
       void queryClient.invalidateQueries({ queryKey: [LISTING_QUERY_KEYS.GET_LANDLORD_LISTINGS] })
       void queryClient.invalidateQueries({
         queryKey: [MARKETPLACE_QUERY_KEYS.GET_MARKETPLACE_LISTINGS],
       })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to create listing.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to create listing.'))
     },
   })
 
@@ -245,7 +237,7 @@ export const UseUpdateLandlordListingMutation = () => {
       })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to update listing.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to update listing.'))
     },
   })
 
@@ -266,14 +258,17 @@ export const UseDeleteLandlordListingMutation = () => {
   } = useMutation({
     mutationFn: async (id: string) => await listingsService.deleteLandlordListingService(id),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Listing deleted successfully!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Listing deleted successfully!',
+      )
       void queryClient.invalidateQueries({ queryKey: [LISTING_QUERY_KEYS.GET_LANDLORD_LISTINGS] })
       void queryClient.invalidateQueries({
         queryKey: [MARKETPLACE_QUERY_KEYS.GET_MARKETPLACE_LISTINGS],
       })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to delete listing.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to delete listing.'))
     },
   })
 
@@ -305,7 +300,7 @@ export const UseUpdateLandlordListingAvailabilityMutation = () => {
       })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to update listing availability.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to update listing availability.'))
     },
   })
 
@@ -315,4 +310,3 @@ export const UseUpdateLandlordListingAvailabilityMutation = () => {
     updateLandlordListingAvailabilityMutationAsync,
   }
 }
-

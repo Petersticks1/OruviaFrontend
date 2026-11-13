@@ -1,10 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { EmptyStateCard } from '@/components/cards/EmptyStateCard'
 import { ListerCard } from '@/components/cards/ListerCard'
 import { PricingSummaryCard } from '@/components/cards/PricingSummaryCard'
-import { ReviewCard } from '@/components/cards/ReviewCard'
 import { SectionCard } from '@/components/cards/SectionCard'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { PageContainer } from '@/components/shared/PageContainer'
@@ -14,14 +12,14 @@ import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
-import {
-  listingDetailQueryOptions,
-  reviewsQueryOptions,
-} from '@/features/listings/api/queries'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { mapPropertyListingDtoToDomain } from '@/features/listings/api/mappers'
 import { ListingsMap } from '@/features/listings/components/ListingsMap'
 import { AMENITIES_CATALOG } from '@/lib/constants'
+import { UseGetMarketplaceListingByIdOrSlugQuery } from '@/services/queries'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { addToast, toggleSavedListing } from '@/store/slices/uiSlice'
+import type { AmenityKey } from '@/types/domain'
 
 export default function ListingDetailView() {
   const { listingId } = useParams({ strict: false }) as { listingId: string }
@@ -30,8 +28,33 @@ export default function ListingDetailView() {
   const savedIds = useAppSelector((state) => state.ui.savedListingIds)
   const [reportOpen, setReportOpen] = useState(false)
 
-  const { data: listing } = useQuery(listingDetailQueryOptions(listingId))
-  const { data: reviews = [] } = useQuery(reviewsQueryOptions(listing?.lister.id))
+  const {
+    marketplaceListingDetailData,
+    marketplaceListingDetailIsLoading,
+  } = UseGetMarketplaceListingByIdOrSlugQuery(listingId)
+
+  const listing = useMemo(() => {
+    const dto = marketplaceListingDetailData?.data
+    return dto ? mapPropertyListingDtoToDomain(dto) : undefined
+  }, [marketplaceListingDetailData])
+
+  if (marketplaceListingDetailIsLoading) {
+    return (
+      <PageContainer className="py-6 space-y-6">
+        <Skeleton className="h-8 w-2/3" />
+        <Skeleton className="h-[380px] w-full rounded-[var(--radius-lg)]" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <div className="space-y-4 lg:col-span-8">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+          <div className="lg:col-span-4">
+            <Skeleton className="h-80 w-full" />
+          </div>
+        </div>
+      </PageContainer>
+    )
+  }
 
   if (!listing) {
     return (
@@ -50,6 +73,10 @@ export default function ListingDetailView() {
   const isSaved = savedIds.includes(listing.id)
   const heroImage = listing.images[0]
   const sideImages = listing.images.slice(1, 5)
+  const contactPhone = (listing.lister.whatsappNumber || listing.lister.phone || '').replace(
+    /[^\d+]/g,
+    '',
+  )
 
   return (
     <PageContainer className="py-6 space-y-8">
@@ -70,8 +97,12 @@ export default function ListingDetailView() {
             {listing.title}
           </h1>
           <div className="flex flex-wrap items-center gap-3 text-sm text-ink-700">
-            <RatingSummary rating={listing.rating} reviewCount={listing.reviewCount} />
-            <span>·</span>
+            {listing.reviewCount > 0 ? (
+              <>
+                <RatingSummary rating={listing.rating} reviewCount={listing.reviewCount} />
+                <span>·</span>
+              </>
+            ) : null}
             <span className="inline-flex items-center gap-1 font-medium underline">
               <Icon name="location" size={16} />
               {listing.location}
@@ -141,31 +172,38 @@ export default function ListingDetailView() {
           {/* Quick Specs */}
           <SectionCard
             title={`Listed by ${listing.lister.name}`}
-            subtitle={`${listing.beds > 0 ? `${listing.beds} Bedrooms · ${listing.baths} Bathrooms · ` : ''}${listing.areaSqm} sqm · ${listing.neighbourhood}, ${listing.city}`}
+            subtitle={`${listing.beds > 0 ? `${listing.beds} Bedrooms · ${listing.baths} Bathrooms · ` : ''}${listing.areaSqm > 0 ? `${listing.areaSqm} sqm · ` : ''}${listing.neighbourhood}, ${listing.city}`}
           >
             <p className="text-sm leading-relaxed text-ink-700">{listing.description}</p>
           </SectionCard>
 
           {/* Amenities */}
-          <SectionCard
-            title="What this property offers"
-            subtitle="Verified infrastructure and estate facilities"
-          >
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              {listing.amenities.map((amenityKey) => {
-                const meta = AMENITIES_CATALOG[amenityKey]
-                return (
-                  <div
-                    key={amenityKey}
-                    className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-line/70 px-3.5 py-2.5"
-                  >
-                    <Icon name={meta.icon} size={20} className="text-ink-900" />
-                    <span className="text-sm font-medium text-ink-900">{meta.label}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </SectionCard>
+          {listing.amenities.length > 0 ? (
+            <SectionCard
+              title="What this property offers"
+              subtitle="Verified infrastructure and estate facilities"
+            >
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                {listing.amenities.map((amenityKey) => {
+                  const meta = AMENITIES_CATALOG[amenityKey as AmenityKey]
+                  const label =
+                    meta?.label ??
+                    String(amenityKey)
+                      .replace(/[_-]+/g, ' ')
+                      .replace(/\b\w/g, (ch) => ch.toUpperCase())
+                  return (
+                    <div
+                      key={String(amenityKey)}
+                      className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-line/70 px-3.5 py-2.5"
+                    >
+                      <Icon name={meta?.icon ?? 'check'} size={20} className="text-ink-900" />
+                      <span className="text-sm font-medium text-ink-900">{label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </SectionCard>
+          ) : null}
 
           {/* Location Map */}
           <SectionCard
@@ -180,25 +218,17 @@ export default function ListingDetailView() {
             lister={listing.lister}
             onViewProfile={(userId) => navigate({ to: '/profile/$userId', params: { userId } })}
             onContact={() => navigate({ to: '/inbox' })}
-            onWhatsApp={() => {
-              window.open(
-                `https://wa.me/${listing.lister.phone.replace(/\s+/g, '')}?text=${encodeURIComponent(`Hello ${listing.lister.name}, I found your listing "${listing.title}" on Oruvia and would like to book an inspection.`)}`,
-                '_blank',
-              )
-            }}
+            onWhatsApp={
+              contactPhone
+                ? () => {
+                    window.open(
+                      `https://wa.me/${contactPhone}?text=${encodeURIComponent(`Hello ${listing.lister.name}, I found your listing "${listing.title}" on Oruvia and would like to book an inspection.`)}`,
+                      '_blank',
+                    )
+                  }
+                : undefined
+            }
           />
-
-          {/* Reviews */}
-          <SectionCard
-            title="Seeker Reviews & Verification History"
-            subtitle="Feedback from renters and buyers who inspected properties with this lister"
-          >
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {reviews.map((rev) => (
-                <ReviewCard key={rev.id} review={rev} />
-              ))}
-            </div>
-          </SectionCard>
         </div>
 
         <div className="lg:col-span-5 xl:col-span-4">
@@ -214,7 +244,7 @@ export default function ListingDetailView() {
               )
               navigate({ to: '/inspections' })
             }}
-            onInquire={() => navigate({ to: '/inbox/$threadId', params: { threadId: 'thr-1' } })}
+            onInquire={() => navigate({ to: '/inbox' })}
             onReport={() => setReportOpen(true)}
           />
         </div>

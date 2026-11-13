@@ -10,6 +10,15 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/api/v1': {
+        target: 'https://api.oruvia.workers.dev',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

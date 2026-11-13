@@ -1,24 +1,15 @@
 import { authorizedRequest } from './axios'
+import { buildQueryString } from './utils'
 import type {
   APISuccessResponse,
   CreateListingPayload,
   ListerListingsQueryParams,
+  PropertyListingDto,
   UpdateListingAvailabilityPayload,
   UpdateListingPayload,
+  UploadedListingMediaDto,
   UploadListingMediaPayload,
 } from './types'
-
-const buildQueryString = (params?: object): string => {
-  if (!params) return ''
-  const searchParams = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '') {
-      searchParams.append(key, String(value))
-    }
-  }
-  const qs = searchParams.toString()
-  return qs ? `?${qs}` : ''
-}
 
 export class ListingsService {
   // ── Agents Listing Endpoints ────────────────────────────────────────────────
@@ -44,11 +35,10 @@ export class ListingsService {
 
   async uploadAgentListingMediaService(payload: UploadListingMediaPayload) {
     try {
-      return await authorizedRequest<UploadListingMediaPayload, APISuccessResponse>(
-        'POST',
-        ListingsService.uploadAgentListingMedia,
-        payload,
-      )
+      return await authorizedRequest<
+        UploadListingMediaPayload,
+        APISuccessResponse<UploadedListingMediaDto>
+      >('POST', ListingsService.uploadAgentListingMedia, payload)
     } catch (error: unknown) {
       console.error('Error in uploadAgentListingMediaService:', error)
       throw error
@@ -57,7 +47,7 @@ export class ListingsService {
 
   async getAgentListingsService(params?: ListerListingsQueryParams) {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<PropertyListingDto[]>>(
         'GET',
         `${ListingsService.getAgentListings}${buildQueryString(params)}`,
         null,
@@ -70,7 +60,7 @@ export class ListingsService {
 
   async createAgentListingService(payload: CreateListingPayload) {
     try {
-      return await authorizedRequest<CreateListingPayload, APISuccessResponse>(
+      return await authorizedRequest<CreateListingPayload, APISuccessResponse<PropertyListingDto>>(
         'POST',
         ListingsService.createAgentListing,
         payload,
@@ -83,7 +73,7 @@ export class ListingsService {
 
   async getAgentListingByIdService(id: string) {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<PropertyListingDto>>(
         'GET',
         ListingsService.getAgentListingById(id),
         null,
@@ -96,7 +86,7 @@ export class ListingsService {
 
   async updateAgentListingService(id: string, payload: UpdateListingPayload) {
     try {
-      return await authorizedRequest<UpdateListingPayload, APISuccessResponse>(
+      return await authorizedRequest<UpdateListingPayload, APISuccessResponse<PropertyListingDto>>(
         'PATCH',
         ListingsService.updateAgentListing(id),
         payload,
@@ -109,7 +99,7 @@ export class ListingsService {
 
   async deleteAgentListingService(id: string) {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<{ message?: string }>>(
         'DELETE',
         ListingsService.deleteAgentListing(id),
         null,
@@ -125,11 +115,10 @@ export class ListingsService {
     payload: UpdateListingAvailabilityPayload,
   ) {
     try {
-      return await authorizedRequest<UpdateListingAvailabilityPayload, APISuccessResponse>(
-        'PATCH',
-        ListingsService.updateAgentListingAvailability(id),
-        payload,
-      )
+      return await authorizedRequest<
+        UpdateListingAvailabilityPayload,
+        APISuccessResponse<PropertyListingDto>
+      >('PATCH', ListingsService.updateAgentListingAvailability(id), payload)
     } catch (error: unknown) {
       console.error('Error in updateAgentListingAvailabilityService:', error)
       throw error
@@ -140,11 +129,10 @@ export class ListingsService {
 
   async uploadLandlordListingMediaService(payload: UploadListingMediaPayload) {
     try {
-      return await authorizedRequest<UploadListingMediaPayload, APISuccessResponse>(
-        'POST',
-        ListingsService.uploadLandlordListingMedia,
-        payload,
-      )
+      return await authorizedRequest<
+        UploadListingMediaPayload,
+        APISuccessResponse<UploadedListingMediaDto>
+      >('POST', ListingsService.uploadLandlordListingMedia, payload)
     } catch (error: unknown) {
       console.error('Error in uploadLandlordListingMediaService:', error)
       throw error
@@ -153,7 +141,7 @@ export class ListingsService {
 
   async getLandlordListingsService(params?: ListerListingsQueryParams) {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<PropertyListingDto[]>>(
         'GET',
         `${ListingsService.getLandlordListings}${buildQueryString(params)}`,
         null,
@@ -166,7 +154,7 @@ export class ListingsService {
 
   async createLandlordListingService(payload: CreateListingPayload) {
     try {
-      return await authorizedRequest<CreateListingPayload, APISuccessResponse>(
+      return await authorizedRequest<CreateListingPayload, APISuccessResponse<PropertyListingDto>>(
         'POST',
         ListingsService.createLandlordListing,
         payload,
@@ -179,7 +167,7 @@ export class ListingsService {
 
   async getLandlordListingByIdService(id: string) {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<PropertyListingDto>>(
         'GET',
         ListingsService.getLandlordListingById(id),
         null,
@@ -192,7 +180,7 @@ export class ListingsService {
 
   async updateLandlordListingService(id: string, payload: UpdateListingPayload) {
     try {
-      return await authorizedRequest<UpdateListingPayload, APISuccessResponse>(
+      return await authorizedRequest<UpdateListingPayload, APISuccessResponse<PropertyListingDto>>(
         'PATCH',
         ListingsService.updateLandlordListing(id),
         payload,
@@ -205,7 +193,7 @@ export class ListingsService {
 
   async deleteLandlordListingService(id: string) {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<{ message?: string }>>(
         'DELETE',
         ListingsService.deleteLandlordListing(id),
         null,
@@ -221,15 +209,13 @@ export class ListingsService {
     payload: UpdateListingAvailabilityPayload,
   ) {
     try {
-      return await authorizedRequest<UpdateListingAvailabilityPayload, APISuccessResponse>(
-        'PATCH',
-        ListingsService.updateLandlordListingAvailability(id),
-        payload,
-      )
+      return await authorizedRequest<
+        UpdateListingAvailabilityPayload,
+        APISuccessResponse<PropertyListingDto>
+      >('PATCH', ListingsService.updateLandlordListingAvailability(id), payload)
     } catch (error: unknown) {
       console.error('Error in updateLandlordListingAvailabilityService:', error)
       throw error
     }
   }
 }
-

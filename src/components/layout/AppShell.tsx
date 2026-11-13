@@ -13,13 +13,16 @@ import { RangeSlider } from '@/components/ui/RangeSlider'
 import { Select } from '@/components/ui/Select'
 import { Switch } from '@/components/ui/Switch'
 import { Toaster } from '@/components/ui/Toast'
-import { AMENITIES_CATALOG, POPULAR_LOCATIONS } from '@/lib/constants'
+import { AMENITIES_CATALOG } from '@/lib/constants'
+import { cn } from '@/lib/cn'
 import { formatCompactNaira } from '@/lib/formatters'
+import { UseGetLocationsQuery } from '@/services/queries'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
   resetSearchFilters,
   setBathsFilter,
   setBedsFilter,
+  setCitySlugFilter,
   setListingTypeFilter,
   setLocationFilter,
   setPriceRangeFilter,
@@ -36,6 +39,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const mobileSearchOpen = useAppSelector((state) => state.ui.mobileSearchOpen)
   const filterModalOpen = useAppSelector((state) => state.ui.filterModalOpen)
   const filters = useAppSelector((state) => state.searchFilters)
+
+  const { locationsData } = UseGetLocationsQuery()
+  const cityOptions = (locationsData?.data ?? []).flatMap((state) =>
+    state.cities.map((city) => ({
+      slug: city.slug,
+      label: `${city.name}, ${state.name}`,
+      cityName: city.name,
+    })),
+  )
 
   const applyAndNavigate = () => {
     dispatch(setMobileSearchOpen(false))
@@ -75,22 +87,35 @@ export function AppShell({ children }: { children: ReactNode }) {
             </label>
             <Input
               leftIcon="search"
-              placeholder="Search Abeokuta, Lekki, Mowe, Yaba..."
+              placeholder="Search city, area, or property keyword..."
               value={filters.location}
-              onChange={(e) => dispatch(setLocationFilter(e.target.value))}
+              onChange={(e) => {
+                dispatch(setLocationFilter(e.target.value))
+                dispatch(setCitySlugFilter(''))
+              }}
             />
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {POPULAR_LOCATIONS.map((loc) => (
-                <button
-                  key={loc}
-                  type="button"
-                  onClick={() => dispatch(setLocationFilter(loc.split(',')[0] ?? loc))}
-                  className="rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-ink-700 hover:bg-line cursor-pointer"
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
+            {cityOptions.length > 0 ? (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {cityOptions.map((loc) => (
+                  <button
+                    key={loc.slug}
+                    type="button"
+                    onClick={() => {
+                      dispatch(setLocationFilter(loc.cityName))
+                      dispatch(setCitySlugFilter(loc.slug))
+                    }}
+                    className={cn(
+                      'rounded-full px-3 py-1 text-xs font-medium transition-colors cursor-pointer',
+                      filters.citySlug === loc.slug
+                        ? 'bg-ink-900 text-surface'
+                        : 'bg-surface-muted text-ink-700 hover:bg-line',
+                    )}
+                  >
+                    {loc.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div>
@@ -140,7 +165,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         open={filterModalOpen}
         onClose={() => dispatch(setFilterModalOpen(false))}
         title="Filters"
-        description="Refine homes by Naira budget, rooms, verification status, and Nigerian estate amenities."
+        description="Refine homes by Naira budget, rooms, verification status, and estate amenities."
         size="lg"
         footer={
           <>
@@ -215,4 +240,3 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   )
 }
-

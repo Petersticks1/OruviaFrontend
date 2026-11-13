@@ -19,6 +19,13 @@ export interface PropertyCardProps {
   className?: string
 }
 
+const VERIFICATION_BADGE_LABELS: Record<string, string> = {
+  licensed_agent: 'Licensed Agent',
+  verified_agent: 'Verified Agent',
+  verified_owner: 'Verified Owner',
+  verified_landlord: 'Verified Landlord',
+}
+
 export function PropertyCard({
   listing,
   variant = 'vertical',
@@ -32,17 +39,27 @@ export function PropertyCard({
   const [popping, setPopping] = useState(false)
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
 
-  const images = listing.images.length > 0
-    ? listing.images
-    : [
-        {
-          id: 'fallback',
-          url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80',
-          alt: listing.title,
-        },
-      ]
+  const images =
+    listing.images.length > 0
+      ? listing.images
+      : [
+          {
+            id: 'fallback',
+            url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80',
+            alt: listing.title,
+          },
+        ]
 
   const currentImage = images[activeIdx] ?? images[0]
+  const verifiedLabel =
+    (listing.lister.verificationBadge &&
+      VERIFICATION_BADGE_LABELS[listing.lister.verificationBadge]) ||
+    'Verified'
+
+  const specsSummary =
+    listing.beds > 0
+      ? `${listing.beds} ${listing.beds === 1 ? 'bed' : 'beds'} · ${listing.baths} ${listing.baths === 1 ? 'bath' : 'baths'}${listing.areaSqm > 0 ? ` · ${listing.areaSqm} sqm` : ''}`
+      : `${listing.areaSqm > 0 ? `${listing.areaSqm} sqm · ` : ''}${listing.propertyTypeName ?? (listing.lister.role === 'landlord' ? 'Direct Landlord' : 'Verified Agent')}`
 
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -70,7 +87,7 @@ export function PropertyCard({
         as="article"
         variant="interactive"
         padding="sm"
-        onClick={() => onSelect?.(listing.id)}
+        onClick={() => onSelect?.(listing.slug || listing.id)}
         className={cn('flex items-center gap-3.5', className)}
       >
         <img
@@ -95,7 +112,9 @@ export function PropertyCard({
               size="sm"
             />
             <span className="text-xs text-ink-500">
-              {listing.beds > 0 ? `${listing.beds} bd · ${listing.baths} ba` : `${listing.areaSqm} sqm`}
+              {listing.beds > 0
+                ? `${listing.beds} bd · ${listing.baths} ba`
+                : listing.propertyTypeName ?? 'Property'}
             </span>
           </div>
         </div>
@@ -109,7 +128,7 @@ export function PropertyCard({
         as="article"
         variant="interactive"
         padding="none"
-        onClick={() => onSelect?.(listing.id)}
+        onClick={() => onSelect?.(listing.slug || listing.id)}
         className={cn('group flex flex-col sm:flex-row', className)}
       >
         <Card.Media className="relative aspect-[4/3] w-full sm:w-64 shrink-0">
@@ -122,7 +141,7 @@ export function PropertyCard({
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute left-3 top-3 flex items-center gap-1.5">
-            {listing.verified ? <VerifiedBadge compact /> : null}
+            {listing.verified ? <VerifiedBadge compact label={verifiedLabel} /> : null}
             {badgeSlot}
           </div>
           <button
@@ -150,7 +169,9 @@ export function PropertyCard({
                   {listing.title}
                 </h3>
               </div>
-              <Rating value={listing.rating} reviewCount={listing.reviewCount} />
+              {listing.rating > 0 ? (
+                <Rating value={listing.rating} reviewCount={listing.reviewCount} />
+              ) : null}
             </div>
             <p className="mt-2 line-clamp-2 text-xs text-ink-500">{listing.description}</p>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-ink-700">
@@ -164,9 +185,11 @@ export function PropertyCard({
                   <Icon name="bath" size={15} /> {listing.baths} Baths
                 </span>
               ) : null}
-              <span className="inline-flex items-center gap-1">
-                <Icon name="area" size={15} /> {listing.areaSqm} sqm
-              </span>
+              {listing.areaSqm > 0 ? (
+                <span className="inline-flex items-center gap-1">
+                  <Icon name="area" size={15} /> {listing.areaSqm} sqm
+                </span>
+              ) : null}
               {listing.videoTourUrl ? (
                 <Badge variant="surface" icon="video">
                   Virtual tour
@@ -176,7 +199,7 @@ export function PropertyCard({
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
             <PriceTag amount={listing.price} period={listing.pricePeriod} />
-            <span className="text-xs font-semibold text-brand-600">Request inspection →</span>
+            <span className="text-xs font-semibold text-brand-600">View details →</span>
           </div>
         </div>
       </Card>
@@ -189,7 +212,7 @@ export function PropertyCard({
       as="article"
       variant="flat"
       padding="none"
-      onClick={() => onSelect?.(listing.id)}
+      onClick={() => onSelect?.(listing.slug || listing.id)}
       className={cn('group bg-transparent cursor-pointer', className)}
     >
       <Card.Media
@@ -219,7 +242,7 @@ export function PropertyCard({
 
         {/* Top-left Verified / Type badge */}
         <div className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-1.5">
-          {listing.verified ? <VerifiedBadge compact /> : null}
+          {listing.verified ? <VerifiedBadge compact label={verifiedLabel} /> : null}
           {listing.videoTourUrl ? (
             <Badge variant="surface" icon="video" className="px-2 py-0.5 text-[11px]">
               Virtual tour
@@ -287,14 +310,16 @@ export function PropertyCard({
           <h3 className="line-clamp-1 text-[15px] font-semibold text-ink-900">
             {listing.neighbourhood}, {listing.city}
           </h3>
-          <Rating value={listing.rating} size={14} />
+          {listing.rating > 0 ? (
+            <Rating value={listing.rating} size={14} />
+          ) : (
+            <span className="shrink-0 text-[11px] font-semibold text-ink-500">
+              {listing.lister.role === 'landlord' ? 'Direct Owner' : 'Agent'}
+            </span>
+          )}
         </div>
         <p className="line-clamp-1 text-sm text-ink-500">{listing.title}</p>
-        <p className="text-xs text-ink-500">
-          {listing.beds > 0
-            ? `${listing.beds} ${listing.beds === 1 ? 'bed' : 'beds'} · ${listing.baths} ${listing.baths === 1 ? 'bath' : 'baths'} · ${listing.areaSqm} sqm`
-            : `${listing.areaSqm} sqm parcel · ${listing.lister.role === 'landlord' ? 'Direct Landlord' : 'Verified Agent'}`}
-        </p>
+        <p className="text-xs text-ink-500">{specsSummary}</p>
         <div className="pt-1 flex items-center justify-between">
           <PriceTag amount={listing.price} period={listing.pricePeriod} size="sm" />
           <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-ink-700">
@@ -353,4 +378,3 @@ export function PropertyCardSkeleton({
     </div>
   )
 }
-

@@ -1,77 +1,40 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { UserProfile, UserRole } from '@/types/domain'
+import type { UserProfile } from '@/types/domain'
+
+const AUTH_STORAGE_KEY = 'oruvia_auth_session'
 
 export interface AuthState {
   token: string | null
   user: UserProfile | null
 }
 
-const DEMO_USERS: Record<UserRole, UserProfile> = {
-  seeker: {
-    id: 'usr-seeker-1',
-    name: 'Tunde Bakare',
-    email: 'tunde.bakare@oruvia.ng',
-    phone: '+234 803 412 8890',
-    role: 'seeker',
-    verified: true,
-    rating: 4.9,
-    reviewCount: 7,
-    responseRate: 98,
-    responseTime: 'within an hour',
-    joinedAt: '2025-02-14T10:00:00Z',
-    listingsCount: 0,
-  },
-  agent: {
-    id: 'usr-agent-1',
-    name: 'Adebayo Ogunlesi',
-    email: 'adebayo@ogunprimehomes.ng',
-    phone: '+234 809 550 1122',
-    role: 'agent',
-    verified: true,
-    agencyName: 'Ogun & Lekki Prime Realty',
-    bio: 'NIA-registered real estate consultant specialising in verified residential homes across Abeokuta, Mowe-Ofada, and Lekki.',
-    rating: 4.94,
-    reviewCount: 42,
-    responseRate: 99,
-    responseTime: 'within 15 mins',
-    joinedAt: '2024-05-10T09:00:00Z',
-    listingsCount: 14,
-  },
-  landlord: {
-    id: 'usr-landlord-1',
-    name: 'Chief (Mrs.) Folake Adeyemi',
-    email: 'folake.adeyemi@oruvia.ng',
-    phone: '+234 802 311 4500',
-    role: 'landlord',
-    verified: true,
-    bio: 'Direct property owner in Ibara GRA, Abeokuta and Ikeja GRA. Transparent tenancy terms with zero inflated middleman fees.',
-    rating: 4.88,
-    reviewCount: 19,
-    responseRate: 95,
-    responseTime: 'within 30 mins',
-    joinedAt: '2024-08-01T12:00:00Z',
-    listingsCount: 5,
-  },
-  admin: {
-    id: 'usr-admin-1',
-    name: 'Damilola Oruvia Trust',
-    email: 'trust@oruvia.ng',
-    phone: '+234 700 678 8420',
-    role: 'admin',
-    verified: true,
-    rating: 5.0,
-    reviewCount: 0,
-    responseRate: 100,
-    responseTime: 'instant',
-    joinedAt: '2024-01-01T00:00:00Z',
-    listingsCount: 0,
-  },
+function loadPersistedAuth(): AuthState {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return { token: null, user: null }
+    const parsed = JSON.parse(raw) as Partial<AuthState>
+    if (typeof parsed.token === 'string' && parsed.token && parsed.user) {
+      return { token: parsed.token, user: parsed.user }
+    }
+  } catch {
+    // Ignore storage read errors
+  }
+  return { token: null, user: null }
 }
 
-const initialState: AuthState = {
-  token: 'demo-jwt-token',
-  user: DEMO_USERS.agent,
+function persistAuth(state: AuthState): void {
+  try {
+    if (state.token && state.user) {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state))
+    } else {
+      localStorage.removeItem(AUTH_STORAGE_KEY)
+    }
+  } catch {
+    // Ignore storage write errors
+  }
 }
+
+const initialState: AuthState = loadPersistedAuth()
 
 export const authSlice = createSlice({
   name: 'auth',
@@ -80,19 +43,19 @@ export const authSlice = createSlice({
     setSession(state, action: PayloadAction<{ token: string; user: UserProfile }>) {
       state.token = action.payload.token
       state.user = action.payload.user
+      persistAuth({ token: state.token, user: state.user })
     },
-    switchDemoRole(state, action: PayloadAction<UserRole>) {
-      state.token = 'demo-jwt-token'
-      state.user = DEMO_USERS[action.payload]
+    updateUserProfile(state, action: PayloadAction<UserProfile>) {
+      state.user = action.payload
+      persistAuth({ token: state.token, user: state.user })
     },
     logout(state) {
       state.token = null
       state.user = null
+      persistAuth({ token: null, user: null })
     },
   },
 })
 
-export const { setSession, switchDemoRole, logout } = authSlice.actions
-export { DEMO_USERS }
+export const { setSession, updateUserProfile, logout } = authSlice.actions
 export default authSlice.reducer
-

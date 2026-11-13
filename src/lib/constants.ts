@@ -41,19 +41,6 @@ export const AMENITIES_CATALOG: Record<AmenityKey, AmenityMeta> = {
   serviced: { key: 'serviced', label: 'Fully Serviced Estate', icon: 'verified' },
 }
 
-export const POPULAR_LOCATIONS: readonly string[] = [
-  'Abeokuta, Ogun',
-  'Mowe-Ofada, Ogun',
-  'Sagamu, Ogun',
-  'Ota, Ogun',
-  'Ijebu-Ode, Ogun',
-  'Lekki Phase 1, Lagos',
-  'Victoria Island, Lagos',
-  'Ikeja GRA, Lagos',
-  'Ikoyi, Lagos',
-  'Yaba, Lagos',
-] as const
-
 export type StatusTone = 'success' | 'info' | 'warning' | 'danger' | 'neutral' | 'verified'
 
 export interface StatusConfig {
@@ -64,9 +51,14 @@ export interface StatusConfig {
 
 export const CENTRAL_STATUS_MAP: Record<UnifiedStatus, StatusConfig> = {
   active: { label: 'Available', tone: 'success', icon: 'check' },
+  available: { label: 'Available', tone: 'success', icon: 'check' },
+  approved: { label: 'Approved', tone: 'success', icon: 'check' },
   rented: { label: 'Rented', tone: 'neutral', icon: 'home' },
   sold: { label: 'Sold', tone: 'neutral', icon: 'check' },
+  unavailable: { label: 'Unavailable', tone: 'neutral', icon: 'close' },
   pending_review: { label: 'In Review', tone: 'warning', icon: 'clock' },
+  rejected: { label: 'Rejected', tone: 'danger', icon: 'close' },
+  suspended: { label: 'Suspended', tone: 'danger', icon: 'report' },
   draft: { label: 'Draft', tone: 'neutral', icon: 'edit' },
   pending: { label: 'Pending confirmation', tone: 'warning', icon: 'clock' },
   confirmed: { label: 'Confirmed', tone: 'success', icon: 'check' },
@@ -78,4 +70,3 @@ export const CENTRAL_STATUS_MAP: Record<UnifiedStatus, StatusConfig> = {
   unverified: { label: 'Unverified', tone: 'neutral', icon: 'shield' },
   flagged: { label: 'Flagged', tone: 'danger', icon: 'report' },
 }
-

@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { EmptyStateCard } from '@/components/cards/EmptyStateCard'
 import { PropertyCard, PropertyCardSkeleton } from '@/components/cards/PropertyCard'
 import { CategoryChips } from '@/components/layout/CategoryChips'
@@ -9,8 +8,13 @@ import { PageContainer } from '@/components/shared/PageContainer'
 import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { LoadMore } from '@/components/ui/LoadMore'
-import { listingsQueryOptions } from '@/features/listings/api/queries'
+import {
+  buildMarketplaceListingsParams,
+  filterListingsClientSide,
+  mapPropertyListingDtoToDomain,
+} from '@/features/listings/api/mappers'
 import { ListingsMap } from '@/features/listings/components/ListingsMap'
+import { UseGetMarketplaceListingsQuery } from '@/services/queries'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
   resetSearchFilters,
@@ -27,7 +31,16 @@ export default function ExploreView() {
   const mapView = useAppSelector((state) => state.ui.mapView)
   const [visibleCount, setVisibleCount] = useState(8)
 
-  const { data: listings = [], isLoading } = useQuery(listingsQueryOptions(filters))
+  const apiParams = useMemo(() => buildMarketplaceListingsParams(filters), [filters])
+  const { marketplaceListingsData, marketplaceListingsIsLoading } =
+    UseGetMarketplaceListingsQuery(apiParams)
+
+  const listings = useMemo(() => {
+    const raw = marketplaceListingsData?.data ?? []
+    return filterListingsClientSide(raw.map(mapPropertyListingDtoToDomain), filters)
+  }, [marketplaceListingsData, filters])
+
+  const isLoading = marketplaceListingsIsLoading
   const visibleListings = listings.slice(0, visibleCount)
 
   const handleToggleSave = (listingId: string) => {

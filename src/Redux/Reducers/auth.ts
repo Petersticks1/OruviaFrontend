@@ -1,2 +1,2 @@
-export { logout, setSession, switchDemoRole } from '@/store/slices/authSlice'
+export { logout, setSession, updateUserProfile } from '@/store/slices/authSlice'
 

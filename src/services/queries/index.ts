@@ -1,6 +1,14 @@
 import { QUERY_KEYS as SEEKER_QUERY_KEYS, UseGetSeekerMeQuery } from './seekers'
-import { QUERY_KEYS as AGENT_QUERY_KEYS, UseGetAgentMeQuery } from './agents'
-import { QUERY_KEYS as LANDLORD_QUERY_KEYS, UseGetLandlordMeQuery } from './landlords'
+import {
+  QUERY_KEYS as AGENT_QUERY_KEYS,
+  UseGetAgentKycQuery,
+  UseGetAgentMeQuery,
+} from './agents'
+import {
+  QUERY_KEYS as LANDLORD_QUERY_KEYS,
+  UseGetLandlordKycQuery,
+  UseGetLandlordMeQuery,
+} from './landlords'
 import {
   QUERY_KEYS as MARKETPLACE_QUERY_KEYS,
   UseGetLocationsQuery,
@@ -32,7 +40,9 @@ export {
   LISTING_QUERY_KEYS,
   UseGetSeekerMeQuery,
   UseGetAgentMeQuery,
+  UseGetAgentKycQuery,
   UseGetLandlordMeQuery,
+  UseGetLandlordKycQuery,
   UseGetLocationsQuery,
   UseGetPropertyTypesQuery,
   UseGetMarketplaceListingsQuery,

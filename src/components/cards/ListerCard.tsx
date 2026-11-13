@@ -14,6 +14,13 @@ export interface ListerCardProps {
   className?: string
 }
 
+const BADGE_LABEL_MAP: Record<string, string> = {
+  licensed_agent: 'Licensed Agent',
+  verified_agent: 'Verified Agent',
+  verified_owner: 'Verified Owner',
+  verified_landlord: 'Verified Landlord',
+}
+
 export function ListerCard({
   lister,
   onContact,
@@ -21,6 +28,9 @@ export function ListerCard({
   onWhatsApp,
   className,
 }: ListerCardProps) {
+  const badgeLabel =
+    (lister.verificationBadge && BADGE_LABEL_MAP[lister.verificationBadge]) || 'Verified'
+
   return (
     <Card variant="elevated" padding="lg" className={className}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -34,18 +44,20 @@ export function ListerCard({
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-bold text-ink-900">{lister.name}</h3>
-              {lister.verified ? <VerifiedBadge compact /> : null}
+              {lister.verified ? <VerifiedBadge compact label={badgeLabel} /> : null}
             </div>
             <p className="text-xs font-medium capitalize text-ink-500">
               {lister.role === 'landlord'
-                ? 'Verified Property Owner (Direct Landlord)'
-                : lister.agencyName ?? 'Verified Real Estate Agent'}
+                ? lister.companyName ?? 'Property Owner (Direct Landlord)'
+                : lister.agencyName ?? 'Real Estate Agent'}
             </p>
-            <RatingSummary rating={lister.rating} reviewCount={lister.reviewCount} size="sm" />
+            {lister.rating > 0 ? (
+              <RatingSummary rating={lister.rating} reviewCount={lister.reviewCount} size="sm" />
+            ) : null}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 rounded-[var(--radius-sm)] bg-surface-muted px-4 py-2.5 text-center">
+        <div className="grid grid-cols-2 gap-3 rounded-[var(--radius-sm)] bg-surface-muted px-4 py-2.5 text-center sm:grid-cols-3">
           <div>
             <p className="text-sm font-bold text-ink-900">{lister.listingsCount}</p>
             <p className="text-[11px] text-ink-500">Listings</p>
@@ -54,9 +66,11 @@ export function ListerCard({
             <p className="text-sm font-bold text-ink-900">{lister.responseRate}%</p>
             <p className="text-[11px] text-ink-500">Response</p>
           </div>
-          <div>
-            <p className="text-sm font-bold text-ink-900">{lister.rating.toFixed(1)}</p>
-            <p className="text-[11px] text-ink-500">Rating</p>
+          <div className="hidden sm:block">
+            <p className="text-sm font-bold text-ink-900">
+              {lister.verified ? 'KYC Pass' : 'Standard'}
+            </p>
+            <p className="text-[11px] text-ink-500">Trust</p>
           </div>
         </div>
       </div>
@@ -67,10 +81,11 @@ export function ListerCard({
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
         <p className="text-xs text-ink-500">
-          Typically responds <span className="font-semibold text-ink-900">{lister.responseTime}</span>
+          Typically responds{' '}
+          <span className="font-semibold text-ink-900">{lister.responseTime}</span>
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          {onViewProfile ? (
+          {onViewProfile && lister.id ? (
             <Button variant="outline" size="sm" onClick={() => onViewProfile(lister.id)}>
               View profile
             </Button>
@@ -80,7 +95,7 @@ export function ListerCard({
               Message in-app
             </Button>
           ) : null}
-          {onWhatsApp ? (
+          {onWhatsApp && (lister.whatsappNumber || lister.phone) ? (
             <Button variant="ghost" size="sm" leftIcon="whatsapp" onClick={onWhatsApp}>
               WhatsApp
             </Button>
@@ -109,4 +124,3 @@ export function ListerCardSkeleton() {
     </Card>
   )
 }
-

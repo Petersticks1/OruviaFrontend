@@ -11,14 +11,8 @@ import type {
   UpdateSeekerProfilePayload,
   VerifyEmailPayload,
 } from '../types'
+import { getApiErrorMessage } from '../utils'
 import { showOruviaToast } from '../../utils/toast'
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-    return error.message
-  }
-  return fallback
-}
 
 // ── Register Seeker ───────────────────────────────────────────────────────────
 export const UseRegisterSeekerMutation = () => {
@@ -33,7 +27,7 @@ export const UseRegisterSeekerMutation = () => {
       showOruviaToast('success', data?.message || 'Seeker account created! Please verify your email.')
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to register seeker account.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to register seeker account.'))
     },
   })
 
@@ -46,6 +40,7 @@ export const UseRegisterSeekerMutation = () => {
 
 // ── Verify Seeker Email ───────────────────────────────────────────────────────
 export const UseVerifySeekerEmailMutation = () => {
+  const queryClient = useQueryClient()
   const {
     isPending: verifySeekerEmailIsPending,
     mutate: verifySeekerEmailMutation,
@@ -54,10 +49,14 @@ export const UseVerifySeekerEmailMutation = () => {
     mutationFn: async (payload: VerifyEmailPayload) =>
       await seekersService.verifySeekerEmailService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Email verified successfully!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Email verified successfully!',
+      )
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_SEEKER_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to verify email.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to verify email.'))
     },
   })
 
@@ -78,10 +77,13 @@ export const UseResendSeekerVerificationCodeMutation = () => {
     mutationFn: async (payload: ResendVerificationCodePayload) =>
       await seekersService.resendSeekerVerificationCodeService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Verification code resent to your email!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Verification code resent to your email!',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to resend verification code.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to resend verification code.'))
     },
   })
 
@@ -107,7 +109,7 @@ export const UseLoginSeekerMutation = () => {
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_SEEKER_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Invalid login credentials.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Invalid login credentials.'))
     },
   })
 
@@ -128,10 +130,13 @@ export const UseForgotSeekerPasswordMutation = () => {
     mutationFn: async (payload: ForgotPasswordPayload) =>
       await seekersService.forgotSeekerPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Password reset instructions sent to your email.')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Password reset instructions sent to your email.',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to send password reset code.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to send password reset code.'))
     },
   })
 
@@ -152,10 +157,13 @@ export const UseResetSeekerPasswordMutation = () => {
     mutationFn: async (payload: ResetPasswordPayload) =>
       await seekersService.resetSeekerPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Password reset successfully! Please log in.')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Password reset successfully! Please log in.',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to reset password.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to reset password.'))
     },
   })
 
@@ -176,10 +184,13 @@ export const UseChangeSeekerPasswordMutation = () => {
     mutationFn: async (payload: ChangePasswordPayload) =>
       await seekersService.changeSeekerPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Password updated successfully!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Password updated successfully!',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to change password.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to change password.'))
     },
   })
 
@@ -205,7 +216,7 @@ export const UseUpdateSeekerMeMutation = () => {
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_SEEKER_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to update seeker profile.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to update seeker profile.'))
     },
   })
 
@@ -215,4 +226,3 @@ export const UseUpdateSeekerMeMutation = () => {
     updateSeekerMeMutationAsync,
   }
 }
-

@@ -3,7 +3,10 @@ import type {
   APISuccessResponse,
   ChangePasswordPayload,
   ForgotPasswordPayload,
+  LandlordAuthData,
+  LandlordKycStatusDto,
   LandlordLoginPayload,
+  LandlordProfileDto,
   RegisterLandlordPayload,
   ResendVerificationCodePayload,
   ResetPasswordPayload,
@@ -21,10 +24,12 @@ export class LandlordsService {
   static changePassword = '/landlords/change-password'
   static getMe = '/landlords/me'
   static updateMe = '/landlords/me'
+  static getKyc = '/landlords/kyc'
+  static submitKyc = '/landlords/kyc'
 
   async registerLandlordService(payload: RegisterLandlordPayload) {
     try {
-      return await unauthorizedRequest<RegisterLandlordPayload, APISuccessResponse>(
+      return await unauthorizedRequest<RegisterLandlordPayload, APISuccessResponse<LandlordAuthData>>(
         'POST',
         LandlordsService.register,
         payload,
@@ -37,11 +42,10 @@ export class LandlordsService {
 
   async verifyLandlordEmailService(payload: VerifyEmailPayload) {
     try {
-      return await unauthorizedRequest<VerifyEmailPayload, APISuccessResponse>(
-        'POST',
-        LandlordsService.verifyEmail,
-        payload,
-      )
+      return await unauthorizedRequest<
+        VerifyEmailPayload,
+        APISuccessResponse<{ message?: string; landlord: LandlordProfileDto }>
+      >('POST', LandlordsService.verifyEmail, payload)
     } catch (error: unknown) {
       console.error('Error in verifyLandlordEmailService:', error)
       throw error
@@ -50,11 +54,10 @@ export class LandlordsService {
 
   async resendLandlordVerificationCodeService(payload: ResendVerificationCodePayload) {
     try {
-      return await unauthorizedRequest<ResendVerificationCodePayload, APISuccessResponse>(
-        'POST',
-        LandlordsService.resendVerificationCode,
-        payload,
-      )
+      return await unauthorizedRequest<
+        ResendVerificationCodePayload,
+        APISuccessResponse<{ message?: string }>
+      >('POST', LandlordsService.resendVerificationCode, payload)
     } catch (error: unknown) {
       console.error('Error in resendLandlordVerificationCodeService:', error)
       throw error
@@ -63,7 +66,7 @@ export class LandlordsService {
 
   async loginLandlordService(payload: LandlordLoginPayload) {
     try {
-      return await unauthorizedRequest<LandlordLoginPayload, APISuccessResponse>(
+      return await unauthorizedRequest<LandlordLoginPayload, APISuccessResponse<LandlordAuthData>>(
         'POST',
         LandlordsService.login,
         payload,
@@ -76,7 +79,7 @@ export class LandlordsService {
 
   async forgotLandlordPasswordService(payload: ForgotPasswordPayload) {
     try {
-      return await unauthorizedRequest<ForgotPasswordPayload, APISuccessResponse>(
+      return await unauthorizedRequest<ForgotPasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         LandlordsService.forgotPassword,
         payload,
@@ -89,7 +92,7 @@ export class LandlordsService {
 
   async resetLandlordPasswordService(payload: ResetPasswordPayload) {
     try {
-      return await unauthorizedRequest<ResetPasswordPayload, APISuccessResponse>(
+      return await unauthorizedRequest<ResetPasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         LandlordsService.resetPassword,
         payload,
@@ -102,7 +105,7 @@ export class LandlordsService {
 
   async changeLandlordPasswordService(payload: ChangePasswordPayload) {
     try {
-      return await authorizedRequest<ChangePasswordPayload, APISuccessResponse>(
+      return await authorizedRequest<ChangePasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         LandlordsService.changePassword,
         payload,
@@ -115,7 +118,7 @@ export class LandlordsService {
 
   async getLandlordMeService() {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<LandlordProfileDto>>(
         'GET',
         LandlordsService.getMe,
         null,
@@ -128,15 +131,39 @@ export class LandlordsService {
 
   async updateLandlordMeService(payload: UpdateLandlordProfilePayload) {
     try {
-      return await authorizedRequest<UpdateLandlordProfilePayload, APISuccessResponse>(
-        'PATCH',
-        LandlordsService.updateMe,
-        payload,
-      )
+      return await authorizedRequest<
+        UpdateLandlordProfilePayload,
+        APISuccessResponse<LandlordProfileDto>
+      >('PATCH', LandlordsService.updateMe, payload)
     } catch (error: unknown) {
       console.error('Error in updateLandlordMeService:', error)
       throw error
     }
   }
-}
 
+  async getLandlordKycService() {
+    try {
+      return await authorizedRequest<null, APISuccessResponse<LandlordKycStatusDto>>(
+        'GET',
+        LandlordsService.getKyc,
+        null,
+      )
+    } catch (error: unknown) {
+      console.error('Error in getLandlordKycService:', error)
+      throw error
+    }
+  }
+
+  async submitLandlordKycService(payload: FormData) {
+    try {
+      return await authorizedRequest<FormData, APISuccessResponse<LandlordKycStatusDto>>(
+        'POST',
+        LandlordsService.submitKyc,
+        payload,
+      )
+    } catch (error: unknown) {
+      console.error('Error in submitLandlordKycService:', error)
+      throw error
+    }
+  }
+}

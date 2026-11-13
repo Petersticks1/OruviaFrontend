@@ -5,11 +5,18 @@ export interface UserProfile {
   name: string
   email: string
   phone: string
+  whatsappNumber?: string
   role: UserRole
   verified: boolean
+  verificationStatus?: 'unverified' | 'pending' | 'approved' | 'rejected'
+  verificationBadge?: string | null
   avatarUrl?: string
   bio?: string
   agencyName?: string
+  companyName?: string
+  licenseNumber?: string
+  preferredLocation?: string
+  isEmailVerified?: boolean
   rating: number
   reviewCount: number
   responseRate: number
@@ -26,10 +33,22 @@ export type PropertyCategory =
   | 'land'
   | 'office'
   | 'shop'
+  | 'residential'
+  | 'commercial'
 
 export type ListingType = 'rent' | 'sale'
 
-export type ListingStatus = 'active' | 'rented' | 'sold' | 'pending_review' | 'draft'
+export type ListingStatus =
+  | 'active'
+  | 'available'
+  | 'rented'
+  | 'sold'
+  | 'unavailable'
+  | 'pending_review'
+  | 'approved'
+  | 'rejected'
+  | 'suspended'
+  | 'draft'
 
 export type AmenityKey =
   | 'wifi'
@@ -55,30 +74,47 @@ export interface ListingImage {
 
 export interface Listing {
   id: string
+  slug?: string
   title: string
   type: ListingType
   category: PropertyCategory
+  propertyTypeId?: string
+  propertyTypeName?: string
+  propertyTypeSlug?: string
+  propertyCategory?: 'residential' | 'commercial' | 'land'
   price: number
   pricePeriod: 'year' | 'month' | 'total'
   serviceCharge?: number
   cautionFee?: number
+  agencyFee?: number
+  legalFee?: number
+  totalInitialPackage?: number
   agencyFeePercent?: number
   legalFeePercent?: number
   location: string
   neighbourhood: string
+  address?: string
   city: string
+  cityId?: string
+  citySlug?: string
   state: string
+  stateId?: string
+  stateSlug?: string
   lat: number
   lng: number
   beds: number
   baths: number
+  toilets?: number
   areaSqm: number
   description: string
-  amenities: AmenityKey[]
+  amenities: Array<AmenityKey | string>
   images: ListingImage[]
   videoTourUrl?: string
   verified: boolean
   status: ListingStatus
+  availabilityStatus?: 'available' | 'rented' | 'sold' | 'unavailable'
+  moderationStatus?: 'pending_review' | 'approved' | 'rejected' | 'suspended'
+  rejectionReason?: string | null
   rating: number
   reviewCount: number
   featured?: boolean
@@ -182,4 +218,3 @@ export type UnifiedStatus =
   | 'verified'
   | 'unverified'
   | 'flagged'
-

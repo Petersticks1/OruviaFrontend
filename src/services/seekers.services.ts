@@ -6,7 +6,9 @@ import type {
   RegisterSeekerPayload,
   ResendVerificationCodePayload,
   ResetPasswordPayload,
+  SeekerAuthData,
   SeekerLoginPayload,
+  SeekerProfileDto,
   UpdateSeekerProfilePayload,
   VerifyEmailPayload,
 } from './types'
@@ -24,7 +26,7 @@ export class SeekersService {
 
   async registerSeekerService(payload: RegisterSeekerPayload) {
     try {
-      return await unauthorizedRequest<RegisterSeekerPayload, APISuccessResponse>(
+      return await unauthorizedRequest<RegisterSeekerPayload, APISuccessResponse<SeekerAuthData>>(
         'POST',
         SeekersService.register,
         payload,
@@ -37,11 +39,10 @@ export class SeekersService {
 
   async verifySeekerEmailService(payload: VerifyEmailPayload) {
     try {
-      return await unauthorizedRequest<VerifyEmailPayload, APISuccessResponse>(
-        'POST',
-        SeekersService.verifyEmail,
-        payload,
-      )
+      return await unauthorizedRequest<
+        VerifyEmailPayload,
+        APISuccessResponse<{ message?: string; seeker: SeekerProfileDto }>
+      >('POST', SeekersService.verifyEmail, payload)
     } catch (error: unknown) {
       console.error('Error in verifySeekerEmailService:', error)
       throw error
@@ -50,11 +51,10 @@ export class SeekersService {
 
   async resendSeekerVerificationCodeService(payload: ResendVerificationCodePayload) {
     try {
-      return await unauthorizedRequest<ResendVerificationCodePayload, APISuccessResponse>(
-        'POST',
-        SeekersService.resendVerificationCode,
-        payload,
-      )
+      return await unauthorizedRequest<
+        ResendVerificationCodePayload,
+        APISuccessResponse<{ message?: string }>
+      >('POST', SeekersService.resendVerificationCode, payload)
     } catch (error: unknown) {
       console.error('Error in resendSeekerVerificationCodeService:', error)
       throw error
@@ -63,7 +63,7 @@ export class SeekersService {
 
   async loginSeekerService(payload: SeekerLoginPayload) {
     try {
-      return await unauthorizedRequest<SeekerLoginPayload, APISuccessResponse>(
+      return await unauthorizedRequest<SeekerLoginPayload, APISuccessResponse<SeekerAuthData>>(
         'POST',
         SeekersService.login,
         payload,
@@ -76,7 +76,7 @@ export class SeekersService {
 
   async forgotSeekerPasswordService(payload: ForgotPasswordPayload) {
     try {
-      return await unauthorizedRequest<ForgotPasswordPayload, APISuccessResponse>(
+      return await unauthorizedRequest<ForgotPasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         SeekersService.forgotPassword,
         payload,
@@ -89,7 +89,7 @@ export class SeekersService {
 
   async resetSeekerPasswordService(payload: ResetPasswordPayload) {
     try {
-      return await unauthorizedRequest<ResetPasswordPayload, APISuccessResponse>(
+      return await unauthorizedRequest<ResetPasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         SeekersService.resetPassword,
         payload,
@@ -102,7 +102,7 @@ export class SeekersService {
 
   async changeSeekerPasswordService(payload: ChangePasswordPayload) {
     try {
-      return await authorizedRequest<ChangePasswordPayload, APISuccessResponse>(
+      return await authorizedRequest<ChangePasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         SeekersService.changePassword,
         payload,
@@ -115,7 +115,7 @@ export class SeekersService {
 
   async getSeekerMeService() {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<SeekerProfileDto>>(
         'GET',
         SeekersService.getMe,
         null,
@@ -128,7 +128,7 @@ export class SeekersService {
 
   async updateSeekerMeService(payload: UpdateSeekerProfilePayload) {
     try {
-      return await authorizedRequest<UpdateSeekerProfilePayload, APISuccessResponse>(
+      return await authorizedRequest<UpdateSeekerProfilePayload, APISuccessResponse<SeekerProfileDto>>(
         'PATCH',
         SeekersService.updateMe,
         payload,
@@ -139,4 +139,3 @@ export class SeekersService {
     }
   }
 }
-

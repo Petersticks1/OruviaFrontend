@@ -1,6 +1,9 @@
 import { authorizedRequest, unauthorizedRequest } from './axios'
 import type {
+  AgentAuthData,
+  AgentKycStatusDto,
   AgentLoginPayload,
+  AgentProfileDto,
   APISuccessResponse,
   ChangePasswordPayload,
   ForgotPasswordPayload,
@@ -21,10 +24,12 @@ export class AgentsService {
   static changePassword = '/agents/change-password'
   static getMe = '/agents/me'
   static updateMe = '/agents/me'
+  static getKyc = '/agents/kyc'
+  static submitKyc = '/agents/kyc'
 
   async registerAgentService(payload: RegisterAgentPayload) {
     try {
-      return await unauthorizedRequest<RegisterAgentPayload, APISuccessResponse>(
+      return await unauthorizedRequest<RegisterAgentPayload, APISuccessResponse<AgentAuthData>>(
         'POST',
         AgentsService.register,
         payload,
@@ -37,11 +42,10 @@ export class AgentsService {
 
   async verifyAgentEmailService(payload: VerifyEmailPayload) {
     try {
-      return await unauthorizedRequest<VerifyEmailPayload, APISuccessResponse>(
-        'POST',
-        AgentsService.verifyEmail,
-        payload,
-      )
+      return await unauthorizedRequest<
+        VerifyEmailPayload,
+        APISuccessResponse<{ message?: string; agent: AgentProfileDto }>
+      >('POST', AgentsService.verifyEmail, payload)
     } catch (error: unknown) {
       console.error('Error in verifyAgentEmailService:', error)
       throw error
@@ -50,11 +54,10 @@ export class AgentsService {
 
   async resendAgentVerificationCodeService(payload: ResendVerificationCodePayload) {
     try {
-      return await unauthorizedRequest<ResendVerificationCodePayload, APISuccessResponse>(
-        'POST',
-        AgentsService.resendVerificationCode,
-        payload,
-      )
+      return await unauthorizedRequest<
+        ResendVerificationCodePayload,
+        APISuccessResponse<{ message?: string }>
+      >('POST', AgentsService.resendVerificationCode, payload)
     } catch (error: unknown) {
       console.error('Error in resendAgentVerificationCodeService:', error)
       throw error
@@ -63,7 +66,7 @@ export class AgentsService {
 
   async loginAgentService(payload: AgentLoginPayload) {
     try {
-      return await unauthorizedRequest<AgentLoginPayload, APISuccessResponse>(
+      return await unauthorizedRequest<AgentLoginPayload, APISuccessResponse<AgentAuthData>>(
         'POST',
         AgentsService.login,
         payload,
@@ -76,7 +79,7 @@ export class AgentsService {
 
   async forgotAgentPasswordService(payload: ForgotPasswordPayload) {
     try {
-      return await unauthorizedRequest<ForgotPasswordPayload, APISuccessResponse>(
+      return await unauthorizedRequest<ForgotPasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         AgentsService.forgotPassword,
         payload,
@@ -89,7 +92,7 @@ export class AgentsService {
 
   async resetAgentPasswordService(payload: ResetPasswordPayload) {
     try {
-      return await unauthorizedRequest<ResetPasswordPayload, APISuccessResponse>(
+      return await unauthorizedRequest<ResetPasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         AgentsService.resetPassword,
         payload,
@@ -102,7 +105,7 @@ export class AgentsService {
 
   async changeAgentPasswordService(payload: ChangePasswordPayload) {
     try {
-      return await authorizedRequest<ChangePasswordPayload, APISuccessResponse>(
+      return await authorizedRequest<ChangePasswordPayload, APISuccessResponse<{ message?: string }>>(
         'POST',
         AgentsService.changePassword,
         payload,
@@ -115,7 +118,7 @@ export class AgentsService {
 
   async getAgentMeService() {
     try {
-      return await authorizedRequest<null, APISuccessResponse>(
+      return await authorizedRequest<null, APISuccessResponse<AgentProfileDto>>(
         'GET',
         AgentsService.getMe,
         null,
@@ -128,7 +131,7 @@ export class AgentsService {
 
   async updateAgentMeService(payload: UpdateAgentProfilePayload) {
     try {
-      return await authorizedRequest<UpdateAgentProfilePayload, APISuccessResponse>(
+      return await authorizedRequest<UpdateAgentProfilePayload, APISuccessResponse<AgentProfileDto>>(
         'PATCH',
         AgentsService.updateMe,
         payload,
@@ -138,5 +141,30 @@ export class AgentsService {
       throw error
     }
   }
-}
 
+  async getAgentKycService() {
+    try {
+      return await authorizedRequest<null, APISuccessResponse<AgentKycStatusDto>>(
+        'GET',
+        AgentsService.getKyc,
+        null,
+      )
+    } catch (error: unknown) {
+      console.error('Error in getAgentKycService:', error)
+      throw error
+    }
+  }
+
+  async submitAgentKycService(payload: FormData) {
+    try {
+      return await authorizedRequest<FormData, APISuccessResponse<AgentKycStatusDto>>(
+        'POST',
+        AgentsService.submitKyc,
+        payload,
+      )
+    } catch (error: unknown) {
+      console.error('Error in submitAgentKycService:', error)
+      throw error
+    }
+  }
+}

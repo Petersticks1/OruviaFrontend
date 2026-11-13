@@ -11,14 +11,8 @@ import type {
   UpdateLandlordProfilePayload,
   VerifyEmailPayload,
 } from '../types'
+import { getApiErrorMessage } from '../utils'
 import { showOruviaToast } from '../../utils/toast'
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-    return error.message
-  }
-  return fallback
-}
 
 // ── Register Landlord ─────────────────────────────────────────────────────────
 export const UseRegisterLandlordMutation = () => {
@@ -30,10 +24,13 @@ export const UseRegisterLandlordMutation = () => {
     mutationFn: async (payload: RegisterLandlordPayload) =>
       await landlordsService.registerLandlordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Landlord account created! Please verify your email.')
+      showOruviaToast(
+        'success',
+        data?.message || 'Landlord account created! Please verify your email.',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to register landlord account.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to register landlord account.'))
     },
   })
 
@@ -46,6 +43,7 @@ export const UseRegisterLandlordMutation = () => {
 
 // ── Verify Landlord Email ─────────────────────────────────────────────────────
 export const UseVerifyLandlordEmailMutation = () => {
+  const queryClient = useQueryClient()
   const {
     isPending: verifyLandlordEmailIsPending,
     mutate: verifyLandlordEmailMutation,
@@ -54,10 +52,14 @@ export const UseVerifyLandlordEmailMutation = () => {
     mutationFn: async (payload: VerifyEmailPayload) =>
       await landlordsService.verifyLandlordEmailService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Landlord email verified successfully!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Landlord email verified successfully!',
+      )
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_LANDLORD_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to verify landlord email.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to verify landlord email.'))
     },
   })
 
@@ -78,10 +80,13 @@ export const UseResendLandlordVerificationCodeMutation = () => {
     mutationFn: async (payload: ResendVerificationCodePayload) =>
       await landlordsService.resendLandlordVerificationCodeService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Verification code resent to your email!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Verification code resent to your email!',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to resend verification code.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to resend verification code.'))
     },
   })
 
@@ -107,7 +112,7 @@ export const UseLoginLandlordMutation = () => {
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_LANDLORD_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Invalid landlord login credentials.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Invalid landlord login credentials.'))
     },
   })
 
@@ -128,10 +133,13 @@ export const UseForgotLandlordPasswordMutation = () => {
     mutationFn: async (payload: ForgotPasswordPayload) =>
       await landlordsService.forgotLandlordPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Password reset instructions sent to your email.')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Password reset instructions sent to your email.',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to send password reset code.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to send password reset code.'))
     },
   })
 
@@ -152,10 +160,15 @@ export const UseResetLandlordPasswordMutation = () => {
     mutationFn: async (payload: ResetPasswordPayload) =>
       await landlordsService.resetLandlordPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Landlord password reset successfully! Please log in.')
+      showOruviaToast(
+        'success',
+        data?.data?.message ||
+          data?.message ||
+          'Landlord password reset successfully! Please log in.',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to reset landlord password.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to reset landlord password.'))
     },
   })
 
@@ -176,10 +189,13 @@ export const UseChangeLandlordPasswordMutation = () => {
     mutationFn: async (payload: ChangePasswordPayload) =>
       await landlordsService.changeLandlordPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Landlord password updated successfully!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Landlord password updated successfully!',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to change landlord password.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to change landlord password.'))
     },
   })
 
@@ -205,7 +221,7 @@ export const UseUpdateLandlordMeMutation = () => {
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_LANDLORD_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to update landlord profile.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to update landlord profile.'))
     },
   })
 
@@ -216,3 +232,32 @@ export const UseUpdateLandlordMeMutation = () => {
   }
 }
 
+// ── Submit Landlord KYC (POST /landlords/kyc) ─────────────────────────────────
+export const UseSubmitLandlordKycMutation = () => {
+  const queryClient = useQueryClient()
+  const {
+    isPending: submitLandlordKycIsPending,
+    mutate: submitLandlordKycMutation,
+    mutateAsync: submitLandlordKycMutationAsync,
+  } = useMutation({
+    mutationFn: async (payload: FormData) =>
+      await landlordsService.submitLandlordKycService(payload),
+    onSuccess: (data) => {
+      showOruviaToast('success', data?.message || 'Landlord KYC documents submitted for review!')
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_LANDLORD_KYC] })
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_LANDLORD_ME] })
+    },
+    onError: (error: unknown) => {
+      showOruviaToast(
+        'error',
+        getApiErrorMessage(error, 'Failed to submit landlord KYC documents.'),
+      )
+    },
+  })
+
+  return {
+    submitLandlordKycIsPending,
+    submitLandlordKycMutation,
+    submitLandlordKycMutationAsync,
+  }
+}

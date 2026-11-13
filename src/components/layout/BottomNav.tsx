@@ -19,10 +19,14 @@ export function BottomNav() {
   const tabs: NavTab[] = [
     { to: '/', label: 'Explore', icon: 'search' },
     { to: '/saved', label: 'Saved', icon: 'heart', badge: savedCount || undefined },
-    { to: '/inbox', label: 'Inbox', icon: 'chat', badge: 1 },
+    { to: '/inbox', label: 'Inbox', icon: 'chat' },
     {
-      to: user && (user.role === 'agent' || user.role === 'landlord') ? '/dashboard' : '/login',
-      label: user ? 'Dashboard' : 'Profile',
+      to: user
+        ? user.role === 'agent' || user.role === 'landlord'
+          ? '/dashboard'
+          : '/inspections'
+        : '/login',
+      label: user ? (user.role === 'seeker' ? 'Account' : 'Dashboard') : 'Log in',
       icon: 'user',
     },
   ]
@@ -62,4 +66,3 @@ export function BottomNav() {
     </nav>
   )
 }
-

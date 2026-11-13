@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
+import { useMemo } from 'react'
 import { EmptyStateCard } from '@/components/cards/EmptyStateCard'
 import { PropertyCard, PropertyCardSkeleton } from '@/components/cards/PropertyCard'
 import { CategoryChips } from '@/components/layout/CategoryChips'
@@ -7,13 +7,20 @@ import { FilterChip } from '@/components/shared/FilterChip'
 import { PageContainer } from '@/components/shared/PageContainer'
 import { SectionHeader } from '@/components/shared/SectionHeader'
 import { Select } from '@/components/ui/Select'
-import { listingsQueryOptions } from '@/features/listings/api/queries'
+import {
+  buildMarketplaceListingsParams,
+  filterListingsClientSide,
+  mapPropertyListingDtoToDomain,
+} from '@/features/listings/api/mappers'
 import { ListingsMap } from '@/features/listings/components/ListingsMap'
+import { UseGetMarketplaceListingsQuery } from '@/services/queries'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import {
   resetSearchFilters,
   setBedsFilter,
+  setCitySlugFilter,
   setLocationFilter,
+  setPropertyTypeSlugFilter,
   setSortBy,
   setVerifiedOnlyFilter,
 } from '@/store/slices/searchFiltersSlice'
@@ -25,7 +32,16 @@ export default function SearchView() {
   const filters = useAppSelector((state) => state.searchFilters)
   const savedIds = useAppSelector((state) => state.ui.savedListingIds)
 
-  const { data: listings = [], isLoading } = useQuery(listingsQueryOptions(filters))
+  const apiParams = useMemo(() => buildMarketplaceListingsParams(filters), [filters])
+  const { marketplaceListingsData, marketplaceListingsIsLoading } =
+    UseGetMarketplaceListingsQuery(apiParams)
+
+  const listings = useMemo(() => {
+    const raw = marketplaceListingsData?.data ?? []
+    return filterListingsClientSide(raw.map(mapPropertyListingDtoToDomain), filters)
+  }, [marketplaceListingsData, filters])
+
+  const isLoading = marketplaceListingsIsLoading
 
   return (
     <div>
@@ -36,7 +52,7 @@ export default function SearchView() {
           title={
             filters.location
               ? `${listings.length} properties in "${filters.location}"`
-              : `${listings.length} verified properties in Ogun & Lagos`
+              : `${listings.length} verified properties on Oruvia`
           }
           subtitle="Compare annual rent or outright sale prices, view on the map, and book physical or virtual inspections."
           action={
@@ -74,6 +90,20 @@ export default function SearchView() {
               label={`Location: ${filters.location}`}
               active
               onRemove={() => dispatch(setLocationFilter(''))}
+            />
+          ) : null}
+          {filters.citySlug ? (
+            <FilterChip
+              label={`City: ${filters.citySlug}`}
+              active
+              onRemove={() => dispatch(setCitySlugFilter(''))}
+            />
+          ) : null}
+          {filters.propertyTypeSlug ? (
+            <FilterChip
+              label={`Type: ${filters.propertyTypeSlug}`}
+              active
+              onRemove={() => dispatch(setPropertyTypeSlugFilter(''))}
             />
           ) : null}
           {filters.beds > 0 ? (

@@ -1,10 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { AmenityKey, ListingType, PropertyCategory } from '@/types/domain'
+import type { AmenityKey, ListingType } from '@/types/domain'
 
 export interface SearchFiltersState {
   location: string
+  citySlug: string
   type: ListingType | 'all'
-  category: PropertyCategory | 'all'
+  propertyTypeSlug: string
+  category: string
   minPrice: number
   maxPrice: number
   beds: number
@@ -17,7 +19,9 @@ export interface SearchFiltersState {
 
 const initialState: SearchFiltersState = {
   location: '',
+  citySlug: '',
   type: 'all',
+  propertyTypeSlug: '',
   category: 'all',
   minPrice: 0,
   maxPrice: 150_000_000,
@@ -36,10 +40,16 @@ export const searchFiltersSlice = createSlice({
     setLocationFilter(state, action: PayloadAction<string>) {
       state.location = action.payload
     },
+    setCitySlugFilter(state, action: PayloadAction<string>) {
+      state.citySlug = action.payload
+    },
     setListingTypeFilter(state, action: PayloadAction<ListingType | 'all'>) {
       state.type = action.payload
     },
-    setCategoryFilter(state, action: PayloadAction<PropertyCategory | 'all'>) {
+    setPropertyTypeSlugFilter(state, action: PayloadAction<string>) {
+      state.propertyTypeSlug = action.payload
+    },
+    setCategoryFilter(state, action: PayloadAction<string>) {
       state.category = action.payload
     },
     setPriceRangeFilter(state, action: PayloadAction<[number, number]>) {
@@ -80,7 +90,9 @@ export const searchFiltersSlice = createSlice({
 
 export const {
   setLocationFilter,
+  setCitySlugFilter,
   setListingTypeFilter,
+  setPropertyTypeSlugFilter,
   setCategoryFilter,
   setPriceRangeFilter,
   setBedsFilter,
@@ -93,4 +105,3 @@ export const {
 } = searchFiltersSlice.actions
 
 export default searchFiltersSlice.reducer
-

@@ -53,8 +53,8 @@ function requireListerGuard() {
   if (user.role !== 'agent' && user.role !== 'landlord' && user.role !== 'admin') {
     store.dispatch(
       addToast({
-        title: 'Agent or Landlord role required',
-        description: 'Use the Demo Role Switcher in the top-right menu to switch to Agent or Landlord.',
+        title: 'Agent or Landlord account required',
+        description: 'Sign in with an Agent or Landlord account to access the Lister Dashboard.',
         tone: 'info',
       }),
     )
@@ -70,8 +70,8 @@ function requireAdminGuard() {
   if (user.role !== 'admin') {
     store.dispatch(
       addToast({
-        title: 'Admin role required',
-        description: 'Switch to the Admin role in the top-right Demo Role Switcher to view /admin.',
+        title: 'Admin access required',
+        description: 'Sign in with an Admin account to view /admin.',
         tone: 'info',
       }),
     )

@@ -1,21 +1,14 @@
 import { unauthorizedRequest } from './axios'
+import { buildQueryString } from './utils'
 import type {
   APISuccessResponse,
   MarketplaceListingsParams,
   MarketplaceLocationsParams,
+  PropertyListingDto,
+  PropertyTypeDto,
+  PropertyTypesParams,
+  StateWithCitiesDto,
 } from './types'
-
-const buildQueryString = (params?: object): string => {
-  if (!params) return ''
-  const searchParams = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '') {
-      searchParams.append(key, String(value))
-    }
-  }
-  const qs = searchParams.toString()
-  return qs ? `?${qs}` : ''
-}
 
 export class MarketplaceService {
   static getLocations = '/locations'
@@ -25,7 +18,7 @@ export class MarketplaceService {
 
   async getLocationsService(params?: MarketplaceLocationsParams) {
     try {
-      return await unauthorizedRequest<null, APISuccessResponse>(
+      return await unauthorizedRequest<null, APISuccessResponse<StateWithCitiesDto[]>>(
         'GET',
         `${MarketplaceService.getLocations}${buildQueryString(params)}`,
         null,
@@ -36,11 +29,11 @@ export class MarketplaceService {
     }
   }
 
-  async getPropertyTypesService() {
+  async getPropertyTypesService(params?: PropertyTypesParams) {
     try {
-      return await unauthorizedRequest<null, APISuccessResponse>(
+      return await unauthorizedRequest<null, APISuccessResponse<PropertyTypeDto[]>>(
         'GET',
-        MarketplaceService.getPropertyTypes,
+        `${MarketplaceService.getPropertyTypes}${buildQueryString(params)}`,
         null,
       )
     } catch (error: unknown) {
@@ -51,7 +44,7 @@ export class MarketplaceService {
 
   async getListingsService(params?: MarketplaceListingsParams) {
     try {
-      return await unauthorizedRequest<null, APISuccessResponse>(
+      return await unauthorizedRequest<null, APISuccessResponse<PropertyListingDto[]>>(
         'GET',
         `${MarketplaceService.getListings}${buildQueryString(params)}`,
         null,
@@ -64,7 +57,7 @@ export class MarketplaceService {
 
   async getListingByIdOrSlugService(idOrSlug: string) {
     try {
-      return await unauthorizedRequest<null, APISuccessResponse>(
+      return await unauthorizedRequest<null, APISuccessResponse<PropertyListingDto>>(
         'GET',
         MarketplaceService.getListingByIdOrSlug(idOrSlug),
         null,
@@ -75,4 +68,3 @@ export class MarketplaceService {
     }
   }
 }
-

@@ -11,14 +11,8 @@ import type {
   UpdateAgentProfilePayload,
   VerifyEmailPayload,
 } from '../types'
+import { getApiErrorMessage } from '../utils'
 import { showOruviaToast } from '../../utils/toast'
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-    return error.message
-  }
-  return fallback
-}
 
 // ── Register Agent ────────────────────────────────────────────────────────────
 export const UseRegisterAgentMutation = () => {
@@ -33,7 +27,7 @@ export const UseRegisterAgentMutation = () => {
       showOruviaToast('success', data?.message || 'Agent account created! Please verify your email.')
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to register agent account.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to register agent account.'))
     },
   })
 
@@ -46,6 +40,7 @@ export const UseRegisterAgentMutation = () => {
 
 // ── Verify Agent Email ────────────────────────────────────────────────────────
 export const UseVerifyAgentEmailMutation = () => {
+  const queryClient = useQueryClient()
   const {
     isPending: verifyAgentEmailIsPending,
     mutate: verifyAgentEmailMutation,
@@ -54,10 +49,14 @@ export const UseVerifyAgentEmailMutation = () => {
     mutationFn: async (payload: VerifyEmailPayload) =>
       await agentsService.verifyAgentEmailService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Agent email verified successfully!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Agent email verified successfully!',
+      )
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_AGENT_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to verify agent email.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to verify agent email.'))
     },
   })
 
@@ -78,10 +77,13 @@ export const UseResendAgentVerificationCodeMutation = () => {
     mutationFn: async (payload: ResendVerificationCodePayload) =>
       await agentsService.resendAgentVerificationCodeService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Verification code resent to your email!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Verification code resent to your email!',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to resend verification code.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to resend verification code.'))
     },
   })
 
@@ -107,7 +109,7 @@ export const UseLoginAgentMutation = () => {
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_AGENT_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Invalid agent login credentials.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Invalid agent login credentials.'))
     },
   })
 
@@ -128,10 +130,13 @@ export const UseForgotAgentPasswordMutation = () => {
     mutationFn: async (payload: ForgotPasswordPayload) =>
       await agentsService.forgotAgentPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Password reset instructions sent to your email.')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Password reset instructions sent to your email.',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to send password reset code.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to send password reset code.'))
     },
   })
 
@@ -152,10 +157,13 @@ export const UseResetAgentPasswordMutation = () => {
     mutationFn: async (payload: ResetPasswordPayload) =>
       await agentsService.resetAgentPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Agent password reset successfully! Please log in.')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Agent password reset successfully! Please log in.',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to reset agent password.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to reset agent password.'))
     },
   })
 
@@ -176,10 +184,13 @@ export const UseChangeAgentPasswordMutation = () => {
     mutationFn: async (payload: ChangePasswordPayload) =>
       await agentsService.changeAgentPasswordService(payload),
     onSuccess: (data) => {
-      showOruviaToast('success', data?.message || 'Agent password updated successfully!')
+      showOruviaToast(
+        'success',
+        data?.data?.message || data?.message || 'Agent password updated successfully!',
+      )
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to change agent password.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to change agent password.'))
     },
   })
 
@@ -205,7 +216,7 @@ export const UseUpdateAgentMeMutation = () => {
       void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_AGENT_ME] })
     },
     onError: (error: unknown) => {
-      showOruviaToast('error', getErrorMessage(error, 'Failed to update agent profile.'))
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to update agent profile.'))
     },
   })
 
@@ -216,3 +227,28 @@ export const UseUpdateAgentMeMutation = () => {
   }
 }
 
+// ── Submit Agent KYC (POST /agents/kyc) ───────────────────────────────────────
+export const UseSubmitAgentKycMutation = () => {
+  const queryClient = useQueryClient()
+  const {
+    isPending: submitAgentKycIsPending,
+    mutate: submitAgentKycMutation,
+    mutateAsync: submitAgentKycMutationAsync,
+  } = useMutation({
+    mutationFn: async (payload: FormData) => await agentsService.submitAgentKycService(payload),
+    onSuccess: (data) => {
+      showOruviaToast('success', data?.message || 'Agent KYC documents submitted for review!')
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_AGENT_KYC] })
+      void queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GET_AGENT_ME] })
+    },
+    onError: (error: unknown) => {
+      showOruviaToast('error', getApiErrorMessage(error, 'Failed to submit agent KYC documents.'))
+    },
+  })
+
+  return {
+    submitAgentKycIsPending,
+    submitAgentKycMutation,
+    submitAgentKycMutationAsync,
+  }
+}

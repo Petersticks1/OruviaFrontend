@@ -9,24 +9,26 @@ import { Input } from '@/components/ui/Input'
 import { Popover } from '@/components/ui/Popover'
 import { RangeSlider } from '@/components/ui/RangeSlider'
 import { Select } from '@/components/ui/Select'
-import { POPULAR_LOCATIONS } from '@/lib/constants'
+import { mapProfileDtoToDomain } from '@/features/listings/api/mappers'
 import { cn } from '@/lib/cn'
 import { formatCompactNaira } from '@/lib/formatters'
+import {
+  UseGetAgentMeQuery,
+  UseGetLandlordMeQuery,
+  UseGetLocationsQuery,
+  UseGetSeekerMeQuery,
+} from '@/services/queries'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { logout, switchDemoRole } from '@/store/slices/authSlice'
+import { logout, updateUserProfile } from '@/store/slices/authSlice'
 import {
   resetSearchFilters,
   setBedsFilter,
+  setCitySlugFilter,
   setListingTypeFilter,
   setLocationFilter,
   setPriceRangeFilter,
 } from '@/store/slices/searchFiltersSlice'
-import {
-  addToast,
-  setFilterModalOpen,
-  setMobileSearchOpen,
-} from '@/store/slices/uiSlice'
-import type { UserRole } from '@/types/domain'
+import { setFilterModalOpen, setMobileSearchOpen } from '@/store/slices/uiSlice'
 
 function OruviaLogo() {
   return (
@@ -72,8 +74,30 @@ export function Header() {
   const dispatch = useAppDispatch()
 
   const user = useAppSelector((state) => state.auth.user)
+  const token = useAppSelector((state) => state.auth.token)
   const filters = useAppSelector((state) => state.searchFilters)
   const savedCount = useAppSelector((state) => state.ui.savedListingIds.length)
+
+  const { locationsData } = UseGetLocationsQuery()
+  const statesWithCities = locationsData?.data ?? []
+  const cityOptions = statesWithCities.flatMap((state) =>
+    state.cities.map((city) => ({
+      slug: city.slug,
+      label: `${city.name}, ${state.name}`,
+      cityName: city.name,
+    })),
+  )
+
+  const { seekerMeData } = UseGetSeekerMeQuery(Boolean(token) && user?.role === 'seeker')
+  const { agentMeData } = UseGetAgentMeQuery(Boolean(token) && user?.role === 'agent')
+  const { landlordMeData } = UseGetLandlordMeQuery(Boolean(token) && user?.role === 'landlord')
+
+  useEffect(() => {
+    const profileDto = seekerMeData?.data ?? agentMeData?.data ?? landlordMeData?.data
+    if (profileDto) {
+      dispatch(updateUserProfile(mapProfileDtoToDomain(profileDto)))
+    }
+  }, [seekerMeData, agentMeData, landlordMeData, dispatch])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -119,7 +143,7 @@ export function Header() {
             <Icon name="search" size={18} className="text-brand-500" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-bold text-ink-900">
-                {filters.location || 'Where in Ogun or Lagos?'}
+                {filters.location || 'Search city or area...'}
               </p>
               <p className="truncate text-[11px] text-ink-500">
                 {filters.type === 'all' ? 'Rent or Buy' : `For ${filters.type}`} · {priceSummary} ·{' '}
@@ -154,7 +178,7 @@ export function Header() {
                 Location
               </span>
               <span className="text-xs font-medium text-ink-500 truncate max-w-32">
-                {filters.location || 'Abeokuta, Lekki...'}
+                {filters.location || 'Anywhere'}
               </span>
             </button>
 
@@ -209,23 +233,25 @@ export function Header() {
         {/* Right Actions: List a property, Notification Bell, User Menu Pill */}
         <div className="hidden md:flex items-center gap-2">
           <Link
-            to="/dashboard/listings/new"
+            to={
+              user && (user.role === 'agent' || user.role === 'landlord')
+                ? '/dashboard/listings/new'
+                : '/signup'
+            }
             className="rounded-full px-3.5 py-2 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface-muted"
           >
             List a property
           </Link>
 
-          <Link
-            to="/notifications"
-            aria-label="Notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full text-ink-700 transition-colors hover:bg-surface-muted hover:text-ink-900"
-          >
-            <Icon name="bell" size={20} />
-            <span
-              aria-hidden="true"
-              className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-500"
-            />
-          </Link>
+          {user ? (
+            <Link
+              to="/notifications"
+              aria-label="Notifications"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-ink-700 transition-colors hover:bg-surface-muted hover:text-ink-900"
+            >
+              <Icon name="bell" size={20} />
+            </Link>
+          ) : null}
 
           <Popover
             align="right"
@@ -241,7 +267,7 @@ export function Header() {
               >
                 <Icon name="menu" size={18} className="text-ink-700" />
                 {user ? (
-                  <Avatar name={user.name} verified={user.verified} size="xs" />
+                  <Avatar name={user.name} src={user.avatarUrl} verified={user.verified} size="xs" />
                 ) : (
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-ink-300 text-surface">
                     <Icon name="user" size={16} />
@@ -261,117 +287,79 @@ export function Header() {
                   </div>
                 ) : null}
 
-                {/* Quick Demo Role Switcher for Hackathon Judges */}
-                <div className="px-3 py-2 bg-surface-muted rounded-[var(--radius-sm)] mx-1">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-ink-500 mb-1.5">
-                    Demo Role Switcher
-                  </p>
-                  <div className="grid grid-cols-2 gap-1">
-                    {(['seeker', 'agent', 'landlord', 'admin'] as UserRole[]).map((role) => (
-                      <button
-                        key={role}
-                        type="button"
-                        onClick={() => {
-                          dispatch(switchDemoRole(role))
-                          dispatch(
-                            addToast({
-                              title: `Switched to ${role.toUpperCase()} view`,
-                              description: 'Route guards and dashboard actions updated.',
-                              tone: 'info',
-                            }),
-                          )
-                          close()
-                        }}
-                        className={cn(
-                          'rounded px-2 py-1 text-xs font-semibold capitalize transition-colors cursor-pointer',
-                          user?.role === role
-                            ? 'bg-ink-900 text-surface'
-                            : 'bg-surface text-ink-700 hover:bg-line/50',
-                        )}
-                      >
-                        {role}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <Divider />
-
-                <Link
-                  to="/saved"
-                  onClick={close}
-                  className="flex items-center justify-between rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
-                >
-                  <span>Saved Wishlists</span>
-                  {savedCount > 0 ? (
-                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-600">
-                      {savedCount}
-                    </span>
-                  ) : null}
-                </Link>
-                <Link
-                  to="/inspections"
-                  onClick={close}
-                  className="block rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
-                >
-                  Inspections
-                </Link>
-                <Link
-                  to="/inbox"
-                  onClick={close}
-                  className="flex items-center justify-between rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
-                >
-                  <span>Messages & Inquiries</span>
-                  <span className="rounded-full bg-brand-500 px-1.5 py-0.2 text-[11px] font-bold text-surface">
-                    1
-                  </span>
-                </Link>
-                <Link
-                  to="/dashboard"
-                  onClick={close}
-                  className="block rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
-                >
-                  Lister Dashboard
-                </Link>
-                <Link
-                  to="/verify"
-                  onClick={close}
-                  className="block rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
-                >
-                  ID Verification
-                </Link>
-                {user?.role === 'admin' ? (
-                  <Link
-                    to="/admin"
-                    onClick={close}
-                    className="block rounded-[var(--radius-sm)] px-3 py-2 font-semibold text-brand-600 hover:bg-brand-50"
-                  >
-                    Admin Moderation
-                  </Link>
-                ) : null}
-                <Divider />
-                <Link
-                  to="/design-system"
-                  onClick={close}
-                  className="block rounded-[var(--radius-sm)] px-3 py-2 text-xs font-semibold text-ink-700 hover:bg-surface-muted"
-                >
-                  Design System Showcase
-                </Link>
                 {user ? (
                   <>
+                    <Link
+                      to="/saved"
+                      onClick={close}
+                      className="flex items-center justify-between rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
+                    >
+                      <span>Saved Wishlists</span>
+                      {savedCount > 0 ? (
+                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-600">
+                          {savedCount}
+                        </span>
+                      ) : null}
+                    </Link>
+                    <Link
+                      to="/inspections"
+                      onClick={close}
+                      className="block rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
+                    >
+                      Inspections
+                    </Link>
+                    <Link
+                      to="/inbox"
+                      onClick={close}
+                      className="block rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
+                    >
+                      Messages & Inquiries
+                    </Link>
+
+                    {user.role === 'agent' || user.role === 'landlord' ? (
+                      <>
+                        <Link
+                          to="/dashboard"
+                          onClick={close}
+                          className="block rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
+                        >
+                          Lister Dashboard
+                        </Link>
+                        <Link
+                          to="/verify"
+                          onClick={close}
+                          className="block rounded-[var(--radius-sm)] px-3 py-2 font-medium text-ink-900 hover:bg-surface-muted"
+                        >
+                          KYC Verification
+                        </Link>
+                      </>
+                    ) : null}
+
+                    {user.role === 'admin' ? (
+                      <Link
+                        to="/admin"
+                        onClick={close}
+                        className="block rounded-[var(--radius-sm)] px-3 py-2 font-semibold text-brand-600 hover:bg-brand-50"
+                      >
+                        Admin Moderation
+                      </Link>
+                    ) : null}
+
+                    <Divider />
                     <Link
                       to="/profile/$userId"
                       params={{ userId: user.id }}
                       onClick={close}
                       className="block rounded-[var(--radius-sm)] px-3 py-2 text-ink-700 hover:bg-surface-muted"
                     >
-                      Public Profile
+                      Profile & Settings
                     </Link>
                     <button
                       type="button"
                       onClick={() => {
                         dispatch(logout())
                         close()
+                        navigate({ to: '/' })
                       }}
                       className="w-full text-left rounded-[var(--radius-sm)] px-3 py-2 font-medium text-danger hover:bg-surface-muted cursor-pointer"
                     >
@@ -394,6 +382,14 @@ export function Header() {
                     >
                       Sign up
                     </Link>
+                    <Divider />
+                    <Link
+                      to="/search"
+                      onClick={close}
+                      className="block rounded-[var(--radius-sm)] px-3 py-2 text-ink-700 hover:bg-surface-muted"
+                    >
+                      Explore Properties
+                    </Link>
                   </>
                 )}
               </div>
@@ -413,22 +409,35 @@ export function Header() {
                 </label>
                 <Input
                   leftIcon="location"
-                  placeholder="Abeokuta, Lekki, Mowe, Yaba..."
+                  placeholder="Search city or neighbourhood..."
                   value={filters.location}
-                  onChange={(e) => dispatch(setLocationFilter(e.target.value))}
+                  onChange={(e) => {
+                    dispatch(setLocationFilter(e.target.value))
+                    dispatch(setCitySlugFilter(''))
+                  }}
                 />
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {POPULAR_LOCATIONS.slice(0, 5).map((loc) => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => dispatch(setLocationFilter(loc.split(',')[0] ?? loc))}
-                      className="rounded-full bg-surface-muted px-2.5 py-1 text-[11px] font-medium text-ink-700 hover:bg-line cursor-pointer"
-                    >
-                      {loc}
-                    </button>
-                  ))}
-                </div>
+                {cityOptions.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {cityOptions.map((loc) => (
+                      <button
+                        key={loc.slug}
+                        type="button"
+                        onClick={() => {
+                          dispatch(setLocationFilter(loc.cityName))
+                          dispatch(setCitySlugFilter(loc.slug))
+                        }}
+                        className={cn(
+                          'rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer',
+                          filters.citySlug === loc.slug
+                            ? 'bg-ink-900 text-surface'
+                            : 'bg-surface-muted text-ink-700 hover:bg-line',
+                        )}
+                      >
+                        {loc.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               <div>

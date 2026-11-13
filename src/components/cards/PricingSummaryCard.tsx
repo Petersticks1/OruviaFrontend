@@ -32,16 +32,30 @@ export function PricingSummaryCard({
   className,
 }: PricingSummaryCardProps) {
   const [mode, setMode] = useState<InspectionMode>('physical')
-  const [dateTime, setDateTime] = useState('2026-11-14T11:00')
+  const [dateTime, setDateTime] = useState(() => {
+    const tomorrow = new Date(Date.now() + 86_400_000)
+    tomorrow.setHours(11, 0, 0, 0)
+    return tomorrow.toISOString().slice(0, 16)
+  })
   const [note, setNote] = useState('')
 
   const serviceCharge = listing.serviceCharge ?? 0
   const cautionFee = listing.cautionFee ?? 0
+  const legalFee =
+    listing.legalFee !== undefined
+      ? listing.legalFee
+      : listing.legalFeePercent !== undefined
+        ? Math.round((listing.price * listing.legalFeePercent) / 100)
+        : 0
   const agencyFee =
-    listing.agencyFeePercent !== undefined
-      ? Math.round((listing.price * listing.agencyFeePercent) / 100)
-      : 0
-  const totalMoveIn = listing.price + serviceCharge + cautionFee + agencyFee
+    listing.agencyFee !== undefined
+      ? listing.agencyFee
+      : listing.agencyFeePercent !== undefined
+        ? Math.round((listing.price * listing.agencyFeePercent) / 100)
+        : 0
+  const totalMoveIn =
+    listing.totalInitialPackage ??
+    listing.price + serviceCharge + cautionFee + agencyFee + legalFee
 
   return (
     <Card
@@ -51,13 +65,15 @@ export function PricingSummaryCard({
     >
       <div className="flex items-baseline justify-between gap-2">
         <PriceTag amount={listing.price} period={listing.pricePeriod} size="lg" />
-        <Rating value={listing.rating} reviewCount={listing.reviewCount} />
+        {listing.rating > 0 ? (
+          <Rating value={listing.rating} reviewCount={listing.reviewCount} />
+        ) : null}
       </div>
 
       {listing.verified ? (
         <div className="flex items-center gap-2 rounded-[var(--radius-sm)] bg-surface-muted px-3 py-2 text-xs text-ink-700">
           <VerifiedBadge compact />
-          <span>Title & landlord ID verified by Oruvia</span>
+          <span>Lister identity verified by Oruvia</span>
         </div>
       ) : null}
 
@@ -141,10 +157,10 @@ export function PricingSummaryCard({
         variant="secondary"
         size="md"
         fullWidth
-        leftIcon="chat"
+        leftIcon="whatsapp"
         onClick={onInquire}
       >
-        Ask {listing.lister.name.split(' ')[0]} a question
+        Contact {listing.lister.name.split(' ')[0]}
       </Button>
 
       <p className="text-center text-xs text-ink-500">
@@ -157,7 +173,7 @@ export function PricingSummaryCard({
       <div className="space-y-2 text-sm">
         <div className="flex justify-between text-ink-700">
           <span className="underline decoration-line underline-offset-2">
-            {listing.type === 'rent' ? 'Annual base rent' : 'Outright sale price'}
+            {listing.type === 'rent' ? 'Base rent' : 'Outright sale price'}
           </span>
           <span>{formatNaira(listing.price)}</span>
         </div>
@@ -177,10 +193,18 @@ export function PricingSummaryCard({
             <span>{formatNaira(cautionFee)}</span>
           </div>
         ) : null}
+        {legalFee > 0 ? (
+          <div className="flex justify-between text-ink-700">
+            <span className="underline decoration-line underline-offset-2">
+              Legal / agreement fee
+            </span>
+            <span>{formatNaira(legalFee)}</span>
+          </div>
+        ) : null}
         {agencyFee > 0 ? (
           <div className="flex justify-between text-ink-700">
             <span className="underline decoration-line underline-offset-2">
-              Agency & agreement ({listing.agencyFeePercent}%)
+              Agency fee
             </span>
             <span>{formatNaira(agencyFee)}</span>
           </div>
@@ -192,7 +216,7 @@ export function PricingSummaryCard({
         )}
         <Divider />
         <div className="flex justify-between text-base font-bold text-ink-900">
-          <span>Total estimated move-in</span>
+          <span>Total initial package</span>
           <span>{formatNaira(totalMoveIn)}</span>
         </div>
       </div>
@@ -231,4 +255,3 @@ export function PricingSummaryCardSkeleton() {
     </Card>
   )
 }
-

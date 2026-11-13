@@ -1,5 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
+const SAVED_STORAGE_KEY = 'oruvia_saved_listings'
+
 export type ToastTone = 'default' | 'success' | 'danger' | 'info'
 
 export interface ToastMessage {
@@ -25,6 +27,28 @@ export interface UiState {
   savedListingIds: string[]
 }
 
+function loadSavedListings(): string[] {
+  try {
+    const raw = localStorage.getItem(SAVED_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item): item is string => typeof item === 'string')
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return []
+}
+
+function persistSavedListings(ids: string[]): void {
+  try {
+    localStorage.setItem(SAVED_STORAGE_KEY, JSON.stringify(ids))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 const initialState: UiState = {
   toasts: [],
   activeModal: null,
@@ -32,7 +56,7 @@ const initialState: UiState = {
   filterModalOpen: false,
   mapView: false,
   pendingIntent: null,
-  savedListingIds: ['lst-lekki-1', 'lst-abeokuta-2'],
+  savedListingIds: loadSavedListings(),
 }
 
 export const uiSlice = createSlice({
@@ -81,6 +105,7 @@ export const uiSlice = createSlice({
       } else {
         state.savedListingIds.push(id)
       }
+      persistSavedListings(state.savedListingIds)
     },
   },
 })
@@ -100,4 +125,3 @@ export const {
 } = uiSlice.actions
 
 export default uiSlice.reducer
-
