@@ -3,8 +3,10 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { EmptyStateCard } from '@/components/cards/EmptyStateCard'
 import { SectionCard } from '@/components/cards/SectionCard'
 import { FormField } from '@/components/shared/FormField'
+import { KycRequiredModal } from '@/components/shared/KycRequiredModal'
 import { PageContainer } from '@/components/shared/PageContainer'
 import { SectionHeader } from '@/components/shared/SectionHeader'
 import { Button } from '@/components/ui/Button'
@@ -24,7 +26,9 @@ import {
   UseUploadLandlordListingMediaMutation,
 } from '@/services/mutations'
 import {
+  UseGetAgentKycQuery,
   UseGetAgentListingByIdQuery,
+  UseGetLandlordKycQuery,
   UseGetLandlordListingByIdQuery,
   UseGetLocationsQuery,
   UseGetPropertyTypesQuery,
@@ -79,6 +83,17 @@ export default function ListingEditorView() {
 
   const [images, setImages] = useState<string[]>(draft.images)
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(draft.amenities)
+  const [kycModalOpen, setKycModalOpen] = useState(true)
+
+  const { agentKycData, agentKycIsLoading } = UseGetAgentKycQuery(
+    !isEditing && !isLandlord && user?.role === 'agent',
+  )
+  const { landlordKycData, landlordKycIsLoading } = UseGetLandlordKycQuery(
+    !isEditing && isLandlord,
+  )
+  const kycInfo = isLandlord ? landlordKycData : agentKycData
+  const isKycLoading = isLandlord ? landlordKycIsLoading : agentKycIsLoading
+  const isVerified = Boolean(kycInfo?.data?.is_verified ?? user?.verified)
 
   const { locationsData } = UseGetLocationsQuery()
   const { propertyTypesData } = UseGetPropertyTypesQuery()
@@ -274,12 +289,36 @@ export default function ListingEditorView() {
     }
   }
 
-  if (isLoadingExisting) {
+  if (isLoadingExisting || (!isEditing && isKycLoading && !kycInfo)) {
     return (
       <PageContainer narrow className="py-8 space-y-6">
         <Skeleton className="h-10 w-1/2" />
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-64 w-full" />
+      </PageContainer>
+    )
+  }
+
+  if (!isEditing && !isVerified) {
+    return (
+      <PageContainer narrow className="py-8 space-y-6">
+        <EmptyStateCard
+          icon="verified"
+          title="KYC verification required to list properties"
+          description="Complete your agent or landlord KYC verification before publishing a property on Oruvia."
+          actionLabel="Continue to KYC"
+          onAction={() => navigate({ to: '/verify' })}
+        />
+        <div className="flex justify-center">
+          <Button variant="ghost" onClick={() => navigate({ to: '/dashboard' })}>
+            Back to Dashboard
+          </Button>
+        </div>
+        <KycRequiredModal
+          open={kycModalOpen}
+          onClose={() => setKycModalOpen(false)}
+          onVerifiedContinue={() => setKycModalOpen(false)}
+        />
       </PageContainer>
     )
   }

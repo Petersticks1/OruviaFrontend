@@ -10,6 +10,7 @@ import { EmptyStateCard } from '@/components/cards/EmptyStateCard'
 import { SectionCard } from '@/components/cards/SectionCard'
 import { StatCard } from '@/components/cards/StatCard'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { KycRequiredModal } from '@/components/shared/KycRequiredModal'
 import { PageContainer } from '@/components/shared/PageContainer'
 import { PriceTag } from '@/components/shared/PriceTag'
 import { SectionHeader } from '@/components/shared/SectionHeader'
@@ -23,7 +24,12 @@ import {
   UseUpdateAgentListingAvailabilityMutation,
   UseUpdateLandlordListingAvailabilityMutation,
 } from '@/services/mutations'
-import { UseGetAgentListingsQuery, UseGetLandlordListingsQuery } from '@/services/queries'
+import {
+  UseGetAgentKycQuery,
+  UseGetAgentListingsQuery,
+  UseGetLandlordKycQuery,
+  UseGetLandlordListingsQuery,
+} from '@/services/queries'
 import { useAppSelector } from '@/store/hooks'
 import type { Listing } from '@/types/domain'
 
@@ -33,7 +39,22 @@ export default function DashboardView() {
   const navigate = useNavigate()
   const user = useAppSelector((state) => state.auth.user)
   const isLandlord = user?.role === 'landlord'
+  const isAgent = user?.role === 'agent'
   const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null)
+  const [kycModalOpen, setKycModalOpen] = useState(false)
+
+  const { agentKycData } = UseGetAgentKycQuery(isAgent && !!user)
+  const { landlordKycData } = UseGetLandlordKycQuery(isLandlord && !!user)
+  const kycData = isLandlord ? landlordKycData : agentKycData
+  const isVerified = Boolean(kycData?.data?.is_verified ?? user?.verified)
+
+  const handleCreateListingClick = () => {
+    if (!isVerified) {
+      setKycModalOpen(true)
+      return
+    }
+    navigate({ to: '/dashboard/listings/new' })
+  }
 
   const { agentListingsData, agentListingsIsLoading } = UseGetAgentListingsQuery(
     undefined,
@@ -229,7 +250,7 @@ export default function DashboardView() {
               variant="primary"
               size="md"
               leftIcon="plus"
-              onClick={() => navigate({ to: '/dashboard/listings/new' })}
+              onClick={handleCreateListingClick}
             >
               Create new listing
             </Button>
@@ -267,7 +288,7 @@ export default function DashboardView() {
             title="You haven't published any listings yet"
             description="Create your first property listing to reach verified seekers on Oruvia."
             actionLabel="Create new listing"
-            onAction={() => navigate({ to: '/dashboard/listings/new' })}
+            onAction={handleCreateListingClick}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -313,6 +334,12 @@ export default function DashboardView() {
         }
         confirmLabel={isDeleting ? 'Deleting...' : 'Delete listing'}
         destructive
+      />
+
+      <KycRequiredModal
+        open={kycModalOpen}
+        onClose={() => setKycModalOpen(false)}
+        onVerifiedContinue={() => navigate({ to: '/dashboard/listings/new' })}
       />
     </PageContainer>
   )

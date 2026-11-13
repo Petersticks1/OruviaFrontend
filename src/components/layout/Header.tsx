@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { KycRequiredModal } from '@/components/shared/KycRequiredModal'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { Counter } from '@/components/ui/Counter'
@@ -13,7 +14,9 @@ import { mapProfileDtoToDomain } from '@/features/listings/api/mappers'
 import { cn } from '@/lib/cn'
 import { formatCompactNaira } from '@/lib/formatters'
 import {
+  UseGetAgentKycQuery,
   UseGetAgentMeQuery,
+  UseGetLandlordKycQuery,
   UseGetLandlordMeQuery,
   UseGetLocationsQuery,
   UseGetSeekerMeQuery,
@@ -71,6 +74,7 @@ function OruviaLogo() {
 export function Header() {
   const [isCompact, setIsCompact] = useState(false)
   const [expandedSearchPanel, setExpandedSearchPanel] = useState(false)
+  const [kycModalOpen, setKycModalOpen] = useState(false)
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -94,6 +98,27 @@ export function Header() {
   const { seekerMeData } = UseGetSeekerMeQuery(Boolean(token) && user?.role === 'seeker')
   const { agentMeData } = UseGetAgentMeQuery(Boolean(token) && user?.role === 'agent')
   const { landlordMeData } = UseGetLandlordMeQuery(Boolean(token) && user?.role === 'landlord')
+  const { agentKycData } = UseGetAgentKycQuery(Boolean(token) && user?.role === 'agent')
+  const { landlordKycData } = UseGetLandlordKycQuery(Boolean(token) && user?.role === 'landlord')
+
+  const isLister = Boolean(user && (user.role === 'agent' || user.role === 'landlord'))
+  const isListerVerified = Boolean(
+    (user?.role === 'landlord'
+      ? landlordKycData?.data?.is_verified
+      : agentKycData?.data?.is_verified) ?? user?.verified,
+  )
+
+  const handleListPropertyClick = () => {
+    if (!isLister) {
+      navigate({ to: '/signup' })
+      return
+    }
+    if (!isListerVerified) {
+      setKycModalOpen(true)
+      return
+    }
+    navigate({ to: '/dashboard/listings/new' })
+  }
 
   useEffect(() => {
     const profileDto = seekerMeData?.data ?? agentMeData?.data ?? landlordMeData?.data
@@ -272,16 +297,13 @@ export function Header() {
 
         {/* Right Actions: List a property, Notification Bell, User Menu Pill */}
         <div className="hidden md:flex items-center gap-2">
-          <Link
-            to={
-              user && (user.role === 'agent' || user.role === 'landlord')
-                ? '/dashboard/listings/new'
-                : '/signup'
-            }
-            className="rounded-full px-3.5 py-2 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface-muted"
+          <button
+            type="button"
+            onClick={handleListPropertyClick}
+            className="rounded-full px-3.5 py-2 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface-muted cursor-pointer"
           >
             List a property
-          </Link>
+          </button>
 
           {user ? (
             <Link
@@ -545,6 +567,12 @@ export function Header() {
           </div>
         </div>
       ) : null}
+
+      <KycRequiredModal
+        open={kycModalOpen}
+        onClose={() => setKycModalOpen(false)}
+        onVerifiedContinue={() => navigate({ to: '/dashboard/listings/new' })}
+      />
     </header>
   )
 }
