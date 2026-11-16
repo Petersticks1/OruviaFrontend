@@ -9,6 +9,7 @@ export interface LiveSelfieCaptureProps {
   required?: boolean
   file: File | null
   onFileSelect: (file: File | null) => void
+  onPreview?: (title: string, url: string) => void
 }
 
 function formatFileSize(bytes: number): string {
@@ -35,6 +36,7 @@ export function LiveSelfieCapture({
   required,
   file,
   onFileSelect,
+  onPreview,
 }: LiveSelfieCaptureProps) {
   const [cameraModalOpen, setCameraModalOpen] = useState(false)
   const [capturedDataUrl, setCapturedDataUrl] = useState<string | null>(null)
@@ -197,7 +199,13 @@ export function LiveSelfieCapture({
 
       {file ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-success/30 bg-success/5 p-3">
-          <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (displayUrl && onPreview) onPreview(label, displayUrl)
+            }}
+            className="flex items-center gap-3 min-w-0 text-left cursor-pointer"
+          >
             {displayUrl ? (
               <img
                 src={displayUrl}
@@ -215,8 +223,19 @@ export function LiveSelfieCapture({
                 Live selfie • {formatFileSize(file.size)}
               </p>
             </div>
-          </div>
+          </button>
           <div className="flex items-center gap-2 shrink-0">
+            {onPreview && displayUrl ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                leftIcon="eye"
+                onClick={() => onPreview(label, displayUrl)}
+              >
+                Preview
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="outline"

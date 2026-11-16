@@ -297,13 +297,15 @@ export function Header() {
 
         {/* Right Actions: List a property, Notification Bell, User Menu Pill */}
         <div className="hidden md:flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleListPropertyClick}
-            className="rounded-full px-3.5 py-2 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface-muted cursor-pointer"
-          >
-            List a property
-          </button>
+          {user?.role !== 'seeker' ? (
+            <button
+              type="button"
+              onClick={handleListPropertyClick}
+              className="rounded-full px-3.5 py-2 text-sm font-semibold text-ink-900 transition-colors hover:bg-surface-muted cursor-pointer"
+            >
+              List a property
+            </button>
+          ) : null}
 
           {user ? (
             <Link

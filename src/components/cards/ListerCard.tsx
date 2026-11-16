@@ -121,11 +121,7 @@ export function ListerCard({
         <p className="mt-4 text-sm leading-relaxed text-ink-700">{lister.bio}</p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-        <p className="text-xs text-ink-500">
-          Typically responds{' '}
-          <span className="font-semibold text-ink-900">{lister.responseTime}</span>
-        </p>
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4">
         <div className="flex flex-wrap items-center gap-2">
           {onViewProfile && lister.id ? (
             <Button variant="outline" size="sm" onClick={() => onViewProfile(lister.id)}>
