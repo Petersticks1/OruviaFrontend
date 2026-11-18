@@ -7,10 +7,14 @@
 
 @theme {
   /* Brand */
-  --color-brand-500: #FF385C;
-  --color-brand-600: #E31C5F;
-  --color-brand-700: #BD1E59;
-  --color-brand-50: #FFF1F3;
+  --color-brand-50: #F1E7F3;
+  --color-brand-100: #D4B4D8;
+  --color-brand-200: #BF90C6;
+  --color-brand-300: #A25DAB;
+  --color-brand-400: #903D9B;
+  --color-brand-500: #740D82;
+  --color-brand-600: #610A6D;
+  --color-brand-700: #4F0759;
 
   /* Neutrals */
   --color-ink-900: #222222;
@@ -64,13 +68,13 @@
   }
 }
 
-/* Gradient utility for key Airbnb-style CTAs */
+/* Gradient utility for key brand CTAs */
 .bg-gradient-brand {
-  background-image: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D70466 100%);
+  background-image: linear-gradient(to right, #903D9B 0%, #740D82 50%, #610A6D 100%);
 }
 
 .bg-gradient-brand:hover {
-  background-image: linear-gradient(to right, #D70466 0%, #BD1E59 50%, #BD1E59 100%);
+  background-image: linear-gradient(to right, #740D82 0%, #610A6D 50%, #4F0759 100%);
 }
 
 /* Native dialog scroll containment (modern-web-guidance: dialog) */
