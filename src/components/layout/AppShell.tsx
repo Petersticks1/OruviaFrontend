@@ -56,9 +56,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-surface text-ink-900">
+    <div className="flex min-h-dvh flex-col overflow-x-clip bg-surface text-ink-900">
       <Header />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 min-w-0">{children}</main>
       <Footer />
       <BottomNav />
       <Toaster />

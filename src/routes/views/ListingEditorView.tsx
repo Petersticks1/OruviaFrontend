@@ -1,16 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { EmptyStateCard } from '@/components/cards/EmptyStateCard'
 import { SectionCard } from '@/components/cards/SectionCard'
+import { CurrencyInput } from '@/components/shared/CurrencyInput'
 import { FormField } from '@/components/shared/FormField'
 import { KycRequiredModal } from '@/components/shared/KycRequiredModal'
+import { ListingMediaUploader } from '@/components/shared/ListingMediaUploader'
 import { PageContainer } from '@/components/shared/PageContainer'
 import { SectionHeader } from '@/components/shared/SectionHeader'
 import { Button } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Checkbox'
+import { Icon } from '@/components/ui/Icon'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -82,8 +85,38 @@ export default function ListingEditorView() {
   const isLandlord = user?.role === 'landlord'
 
   const [images, setImages] = useState<string[]>(draft.images)
+  const [pendingImageFiles, setPendingImageFiles] = useState<File[]>([])
+  const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null)
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>(draft.amenities)
   const [kycModalOpen, setKycModalOpen] = useState(true)
+  const [customAmenityInput, setCustomAmenityInput] = useState('')
+
+  const customAmenities = useMemo(
+    () => selectedAmenities.filter((item) => !(item in AMENITIES_CATALOG)),
+    [selectedAmenities],
+  )
+
+  const handleAddCustomAmenity = () => {
+    const trimmed = customAmenityInput.trim()
+    if (!trimmed) return
+
+    const lower = trimmed.toLowerCase()
+    const matchedCatalogKey = (Object.keys(AMENITIES_CATALOG) as AmenityKey[]).find(
+      (key) =>
+        key.toLowerCase() === lower || AMENITIES_CATALOG[key].label.toLowerCase() === lower,
+    )
+
+    const valueToAdd = matchedCatalogKey ?? trimmed
+    const alreadyExists = selectedAmenities.some(
+      (item) => item.toLowerCase() === valueToAdd.toLowerCase(),
+    )
+    if (!alreadyExists) {
+      const next = [...selectedAmenities, valueToAdd]
+      setSelectedAmenities(next)
+      dispatch(updateListingDraft({ amenities: next }))
+    }
+    setCustomAmenityInput('')
+  }
 
   const { agentKycData, agentKycIsLoading } = UseGetAgentKycQuery(
     !isEditing && !isLandlord && user?.role === 'agent',
@@ -136,6 +169,7 @@ export default function ListingEditorView() {
     updateLandlordListingIsPending
 
   const {
+    control,
     register,
     watch,
     setValue,
@@ -207,69 +241,85 @@ export default function ListingEditorView() {
     }
   }, [classification, setValue, watch])
 
-  const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    if (files.length === 0) return
-
-    const formData = new FormData()
-    files.forEach((file) => {
-      formData.append('images', file)
-    })
-
-    try {
-      const response = isLandlord
-        ? await uploadLandlordListingMediaMutationAsync(formData)
-        : await uploadAgentListingMediaMutationAsync(formData)
-      const uploadedUrls = response?.data?.images ?? []
-      if (uploadedUrls.length > 0) {
-        setImages((prev) => [...prev, ...uploadedUrls])
-      }
-      if (response?.data?.video_tour_url || response?.data?.video) {
-        setValue('video_tour_url', response.data.video_tour_url || response.data.video || '')
-      }
-    } catch {
-      // Mutation hook notifies via toast
-    } finally {
-      e.target.value = ''
-    }
-  }
-
   const onSubmit = async (values: ListingFormValues) => {
-    if (images.length === 0) {
+    if (images.length + pendingImageFiles.length === 0) {
       dispatch(
         addToast({
           title: 'Photos required',
-          description: 'Please upload at least one photo before submitting.',
+          description: 'Please select or capture at least one photo before submitting.',
           tone: 'danger',
         }),
       )
       return
     }
 
-    const payload = {
-      title: values.title.trim(),
-      description: values.description.trim(),
-      classification: values.classification,
-      property_type_id: values.property_type_id,
-      state_id: values.state_id,
-      city_id: values.city_id,
-      area: values.area.trim(),
-      address: values.address.trim(),
-      base_price: values.base_price,
-      payment_frequency: values.payment_frequency,
-      agency_fee: values.agency_fee,
-      legal_fee: values.legal_fee,
-      caution_fee: values.caution_fee,
-      service_charge: values.service_charge,
-      bedrooms: values.bedrooms,
-      bathrooms: values.bathrooms,
-      toilets: values.toilets,
-      amenities: selectedAmenities,
-      images,
-      video_tour_url: values.video_tour_url?.trim() || undefined,
-    }
-
     try {
+      let finalImages = [...images]
+      let finalVideoUrl = values.video_tour_url?.trim() || undefined
+
+      if (pendingImageFiles.length > 0 || pendingVideoFile) {
+        const mediaFormData = new FormData()
+        pendingImageFiles.forEach((file) => {
+          mediaFormData.append('images', file)
+        })
+        if (pendingVideoFile) {
+          mediaFormData.append('video', pendingVideoFile)
+        }
+
+        const mediaResponse = isLandlord
+          ? await uploadLandlordListingMediaMutationAsync(mediaFormData)
+          : await uploadAgentListingMediaMutationAsync(mediaFormData)
+
+        const uploadedImages = mediaResponse?.data?.images ?? []
+        if (uploadedImages.length > 0) {
+          finalImages = [...finalImages, ...uploadedImages]
+          setImages(finalImages)
+          setPendingImageFiles([])
+        }
+
+        const uploadedVideo =
+          mediaResponse?.data?.video_tour_url || mediaResponse?.data?.video || ''
+        if (uploadedVideo) {
+          finalVideoUrl = uploadedVideo
+          setValue('video_tour_url', uploadedVideo, { shouldDirty: true })
+          setPendingVideoFile(null)
+        }
+      }
+
+      if (finalImages.length === 0) {
+        dispatch(
+          addToast({
+            title: 'Photos required',
+            description: 'Photo upload did not return any image URLs. Please try again.',
+            tone: 'danger',
+          }),
+        )
+        return
+      }
+
+      const payload = {
+        title: values.title.trim(),
+        description: values.description.trim(),
+        classification: values.classification,
+        property_type_id: values.property_type_id,
+        state_id: values.state_id,
+        city_id: values.city_id,
+        area: values.area.trim(),
+        address: values.address.trim(),
+        base_price: values.base_price,
+        payment_frequency: values.payment_frequency,
+        agency_fee: values.agency_fee,
+        legal_fee: values.legal_fee,
+        caution_fee: values.caution_fee,
+        service_charge: values.service_charge,
+        bedrooms: values.bedrooms,
+        bathrooms: values.bathrooms,
+        toilets: values.toilets,
+        amenities: selectedAmenities,
+        images: finalImages,
+        video_tour_url: finalVideoUrl,
+      }
+
       if (isEditing) {
         if (isLandlord) {
           await updateLandlordListingMutationAsync({ id: editingId, payload })
@@ -392,11 +442,19 @@ export default function ListingEditorView() {
 
             <FormField label="Base Price (₦ NGN)" required error={errors.base_price?.message}>
               {({ id, hasError }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  hasError={hasError}
-                  {...register('base_price', { valueAsNumber: true })}
+                <Controller
+                  control={control}
+                  name="base_price"
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id={id}
+                      hasError={hasError}
+                      placeholder="0"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
               )}
             </FormField>
@@ -425,44 +483,76 @@ export default function ListingEditorView() {
 
             <FormField label="Agency Fee (₦)" error={errors.agency_fee?.message}>
               {({ id, hasError }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  hasError={hasError}
-                  {...register('agency_fee', { valueAsNumber: true })}
+                <Controller
+                  control={control}
+                  name="agency_fee"
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id={id}
+                      hasError={hasError}
+                      placeholder="0"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
               )}
             </FormField>
 
             <FormField label="Legal Fee (₦)" error={errors.legal_fee?.message}>
               {({ id, hasError }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  hasError={hasError}
-                  {...register('legal_fee', { valueAsNumber: true })}
+                <Controller
+                  control={control}
+                  name="legal_fee"
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id={id}
+                      hasError={hasError}
+                      placeholder="0"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
               )}
             </FormField>
 
             <FormField label="Caution Deposit (₦)" error={errors.caution_fee?.message}>
               {({ id, hasError }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  hasError={hasError}
-                  {...register('caution_fee', { valueAsNumber: true })}
+                <Controller
+                  control={control}
+                  name="caution_fee"
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id={id}
+                      hasError={hasError}
+                      placeholder="0"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
               )}
             </FormField>
 
             <FormField label="Service Charge (₦)" error={errors.service_charge?.message}>
               {({ id, hasError }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  hasError={hasError}
-                  {...register('service_charge', { valueAsNumber: true })}
+                <Controller
+                  control={control}
+                  name="service_charge"
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id={id}
+                      hasError={hasError}
+                      placeholder="0"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
               )}
             </FormField>
@@ -581,36 +671,92 @@ export default function ListingEditorView() {
             </FormField>
           </div>
 
-          <div className="mt-4">
-            <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-ink-700">
-              Select Available Amenities
-            </p>
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {(Object.keys(AMENITIES_CATALOG) as AmenityKey[]).map((key) => {
-                const item = AMENITIES_CATALOG[key]
-                const checked = selectedAmenities.includes(key)
-                return (
-                  <Checkbox
-                    key={key}
-                    label={item.label}
-                    checked={checked}
-                    onChange={() => {
-                      const next = checked
-                        ? selectedAmenities.filter((a) => a !== key)
-                        : [...selectedAmenities, key]
-                      setSelectedAmenities(next)
-                      dispatch(updateListingDraft({ amenities: next }))
-                    }}
-                  />
-                )
-              })}
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-ink-700">
+                Select Available Amenities
+              </p>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                {(Object.keys(AMENITIES_CATALOG) as AmenityKey[]).map((key) => {
+                  const item = AMENITIES_CATALOG[key]
+                  const checked = selectedAmenities.includes(key)
+                  return (
+                    <Checkbox
+                      key={key}
+                      label={item.label}
+                      checked={checked}
+                      onChange={() => {
+                        const next = checked
+                          ? selectedAmenities.filter((a) => a !== key)
+                          : [...selectedAmenities, key]
+                        setSelectedAmenities(next)
+                        dispatch(updateListingDraft({ amenities: next }))
+                      }}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="border-t border-line pt-4 space-y-2.5">
+              <p className="text-xs font-semibold text-ink-900">
+                Add Custom Amenities (optional)
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  placeholder="e.g. POP Ceiling, Prepaid Meter, Estate Security"
+                  value={customAmenityInput}
+                  onChange={(e) => setCustomAmenityInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddCustomAmenity()
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  leftIcon="plus"
+                  onClick={handleAddCustomAmenity}
+                  disabled={!customAmenityInput.trim()}
+                  className="shrink-0"
+                >
+                  Add Amenity
+                </Button>
+              </div>
+
+              {customAmenities.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {customAmenities.map((amenity) => (
+                    <span
+                      key={amenity}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
+                    >
+                      {amenity}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${amenity}`}
+                        onClick={() => {
+                          const next = selectedAmenities.filter((a) => a !== amenity)
+                          setSelectedAmenities(next)
+                          dispatch(updateListingDraft({ amenities: next }))
+                        }}
+                        className="rounded-full p-0.5 text-brand-600 transition hover:bg-brand-100 hover:text-brand-700 cursor-pointer"
+                      >
+                        <Icon name="close" size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
         </SectionCard>
 
         <SectionCard
-          title="3. Property Photos & Virtual Tour Link"
-          subtitle="Upload property images directly and optionally include a virtual video tour URL."
+          title="3. Property Photos & Video Tour"
+          subtitle="Upload multiple photos from your files or camera, and select or record a walkthrough video."
           footer={
             <>
               <Button variant="outline" onClick={() => navigate({ to: '/dashboard' })}>
@@ -620,73 +766,47 @@ export default function ListingEditorView() {
                 type="submit"
                 variant="primary"
                 leftIcon="check"
-                loading={isSubmitting}
-                disabled={isUploadingMedia}
+                loading={isSubmitting || isUploadingMedia}
+                disabled={isSubmitting || isUploadingMedia}
               >
-                {isEditing ? 'Save changes' : 'Submit listing'}
+                {isUploadingMedia
+                  ? 'Uploading media...'
+                  : isEditing
+                    ? 'Save changes'
+                    : 'Submit listing'}
               </Button>
             </>
           }
         >
-          <div className="space-y-4">
-            <FormField label="Upload Photos (JPEG / PNG / WebP)" required>
-              {({ id }) => (
-                <input
-                  id={id}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFilesSelected}
-                  disabled={isUploadingMedia}
-                  className="block w-full text-xs text-ink-700 file:mr-4 file:rounded-[var(--radius-sm)] file:border-0 file:bg-ink-900 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-surface hover:file:bg-ink-700"
-                />
-              )}
-            </FormField>
-
-            {isUploadingMedia ? (
-              <p className="text-xs font-medium text-brand-600">Uploading media to Oruvia...</p>
-            ) : null}
-
-            {images.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {images.map((url, idx) => (
-                  <div
-                    key={`${url}-${idx}`}
-                    className="relative overflow-hidden rounded-[var(--radius-sm)] border border-line"
-                  >
-                    <img
-                      src={url}
-                      alt={`Upload preview ${idx + 1}`}
-                      width={240}
-                      height={160}
-                      className="aspect-[4/3] w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setImages((prev) => prev.filter((_, i) => i !== idx))}
-                      className="absolute top-1.5 right-1.5 rounded bg-ink-900/80 px-2 py-0.5 text-[11px] font-semibold text-surface cursor-pointer"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            <FormField
-              label="Video Tour URL (optional)"
-              error={errors.video_tour_url?.message}
-            >
-              {({ id, hasError }) => (
-                <Input
-                  id={id}
-                  hasError={hasError}
-                  placeholder="https://..."
-                  {...register('video_tour_url')}
-                />
-              )}
-            </FormField>
-          </div>
+          <ListingMediaUploader
+            existingImages={images}
+            pendingImageFiles={pendingImageFiles}
+            videoUrl={watch('video_tour_url') ?? ''}
+            pendingVideoFile={pendingVideoFile}
+            isUploading={isUploadingMedia || isSubmitting}
+            onAddPhotoFiles={(files) => setPendingImageFiles((prev) => [...prev, ...files])}
+            onRemoveExistingPhoto={(idx) =>
+              setImages((prev) => {
+                const next = prev.filter((_, i) => i !== idx)
+                dispatch(updateListingDraft({ images: next }))
+                return next
+              })
+            }
+            onRemovePendingPhoto={(idx) =>
+              setPendingImageFiles((prev) => prev.filter((_, i) => i !== idx))
+            }
+            onSelectVideoFile={(file) => {
+              setPendingVideoFile(file)
+              if (file) {
+                setValue('video_tour_url', '', { shouldDirty: true })
+                dispatch(updateListingDraft({ videoTourUrl: '' }))
+              }
+            }}
+            onVideoUrlChange={(url) => {
+              setValue('video_tour_url', url, { shouldDirty: true })
+              dispatch(updateListingDraft({ videoTourUrl: url }))
+            }}
+          />
         </SectionCard>
       </form>
     </PageContainer>
